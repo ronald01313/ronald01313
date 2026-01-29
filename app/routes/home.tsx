@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { fetchBlogs, type Blog } from "../lib/supabase";
+import {
+  fetchBlogs,
+  getComments,
+  addComment,
+  fetchReactions,
+  upsertReaction,
+  getCurrentUser,
+  type Blog,
+} from "../lib/supabase";
 
 
 const formatDate = (value?: string | null) => {
@@ -13,17 +21,41 @@ const formatDate = (value?: string | null) => {
   return date.toISOString().split("T")[0];
 };
 
+const countReactions = (reactions: any[], type: string) => {
+  return reactions?.filter((r) => r.reaction === type).length || 0;
+};
+
 
 export default function Home() {
-   const [blogs, setBlogs] = useState<Blog[]>([]);
+  const [blogs, setBlogs] = useState<Blog[]>([]);
+  const [comments, setComments] = useState<Record<string, any[]>>({});
+  const [reactions, setReactions] = useState<Record<string, any[]>>({});
+  const [commentText, setCommentText] = useState<Record<string, string>>({});
+  const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+  /* ------------------ Load user ------------------ */
+  useEffect(() => {
+    getCurrentUser().then((user) => setUserId(user?.id ?? null));
+  }, []);
 
+  /* ------------------ Load blogs ------------------ */
   const loadBlogs = async () => {
     setLoading(true);
-    const fetchedBlogs = await fetchBlogs();
-    setBlogs(fetchedBlogs);
+    const data = await fetchBlogs();
+    setBlogs(data);
     setLoading(false);
+  };
+
+  /* ------------------ Load comments & reactions ------------------ */
+  const loadExtras = async (blogId: string) => {
+    const [c, r] = await Promise.all([
+      getComments(parseInt(blogId)),
+      fetchReactions(blogId),
+    ]);
+
+    setComments((prev) => ({ ...prev, [blogId]: c }));
+    setReactions((prev) => ({ ...prev, [blogId]: r }));
   };
 
   useEffect(() => {
@@ -32,14 +64,14 @@ export default function Home() {
 
   useEffect(() => {
     if (!mounted) return;
-
     loadBlogs();
-    const interval = setInterval(loadBlogs, 5000);
-    return () => clearInterval(interval);
   }, [mounted]);
 
-  if (!mounted) return null; // 👈 hydration-safe
+  useEffect(() => {
+    blogs.forEach((b) => loadExtras(b.id.toString()));
+  }, [blogs]);
 
+  if (!mounted) return null;
 
   return (
     <div>
@@ -134,6 +166,90 @@ export default function Home() {
                   <div style={{ display: "flex", justifyContent: "space-between", color: "#999", fontSize: "14px" }}>
                     <span>{new Date(blog.created_at).toLocaleDateString()}</span>
                     <span>By {blog.profiles?.username || "Unknown"}</span>
+                  </div>
+
+                  {/* Reactions */}
+                  <div style={{ marginTop: "15px" }}>
+                    <button
+                      disabled={!userId}
+                      onClick={async () => {
+                        await upsertReaction(blog.id.toString(), userId!, "like");
+                        loadExtras(blog.id.toString());
+                      }}
+                    >
+                      👍{" "}
+                      {reactions[blog.id.toString()]?.filter((r) => r.reaction === "like")
+                        .length || 0}
+                    </button>
+
+                    <button
+                      disabled={!userId}
+                      onClick={async () => {
+                        await upsertReaction(blog.id.toString(), userId!, "dislike");
+                        loadExtras(blog.id.toString());
+                      }}
+                      style={{ marginLeft: "10px" }}
+                    >
+                      👎{" "}
+                      {reactions[blog.id.toString()]?.filter((r) => r.reaction === "dislike")
+                        .length || 0}
+                    </button>
+                  </div>
+
+                  {/* Comments */}
+                  <div style={{ marginTop: "20px" }}>
+                    <h4>Comments</h4>
+
+                    {comments[blog.id.toString()]?.length ? (
+                      comments[blog.id.toString()].map((c) => (
+                        <div
+                          key={c.id}
+                          style={{
+                            padding: "8px 0",
+                            borderBottom: "1px solid #eee",
+                          }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                            <strong>{c.profiles?.username || "Anonymous"}</strong>
+                            <span style={{ fontSize: "12px", color: "#999" }}>{new Date(c.created_at).toLocaleDateString()}</span>
+                          </div>
+                          <p style={{ margin: "4px 0" }}>{c.content}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p style={{ color: "#999" }}>No comments yet</p>
+                    )}
+
+                    {/* Add comment */}
+                    {userId && (
+                      <div style={{ marginTop: "10px" }}>
+                        <textarea
+                          placeholder="Write a comment..."
+                          value={commentText[blog.id.toString()] || ""}
+                          onChange={(e) =>
+                            setCommentText((prev) => ({
+                              ...prev,
+                              [blog.id.toString()]: e.target.value,
+                            }))
+                          }
+                          style={{ width: "100%", padding: "8px" }}
+                        />
+                        <button
+                          onClick={async () => {
+                            if (!commentText[blog.id.toString()]) return;
+                            await addComment({ blog_id: blog.id, user_id: userId!, content: commentText[blog.id.toString()] });
+                            setCommentText((prev) => ({
+                              ...prev,
+                              [blog.id.toString()]: "",
+                            }));
+                            loadExtras(blog.id.toString());
+                          }}
+                          style={{ marginTop: "5px" }}
+                        >
+                          Post Comment
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </article>
               ))
