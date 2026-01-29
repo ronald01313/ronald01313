@@ -102,7 +102,7 @@ export const fetchBlogs = async (): Promise<Blog[]> => {
   try {
     const { data, error } = await supabase
       .from("blogs")
-      .select("*, profiles(username, avatar_url), blog_images(*)")
+      .select("*, blog_images(*)")
       .eq("published", true)
       .order("created_at", { ascending: false });
 
@@ -111,7 +111,19 @@ export const fetchBlogs = async (): Promise<Blog[]> => {
       return [];
     }
 
-    return data || [];
+    // Filter out blogs with null/undefined ids and fetch profiles separately for each blog
+    const validBlogs = (data || []).filter(blog => blog.id != null);
+    const blogsWithProfiles = await Promise.all(
+      validBlogs.map(async (blog) => {
+        const profile = await getProfile(blog.user_id);
+        return {
+          ...blog,
+          profiles: profile
+        };
+      })
+    );
+
+    return blogsWithProfiles;
   } catch (err) {
     console.error("Unexpected error fetching blogs:", err);
     return [];
@@ -296,21 +308,38 @@ export const deleteBlogImage = async (imageId: number): Promise<boolean> => {
 };
 
 // Comment functions
-export const getComments = async (blogId: number): Promise<Comment[]> => {
+export const getComments = async (blogId: number | string): Promise<Comment[]> => {
+  const id = typeof blogId === 'string' ? parseInt(blogId) : blogId;
+  if (isNaN(id) || id == null) {
+    console.warn("Invalid blogId:", blogId);
+    return [];
+  }
+
   try {
     const { data, error } = await supabase
       .from("comments")
-      .select("*, profiles(username, avatar_url)")
-      .eq("blog_id", blogId)
-      .eq("parent_comment_id", null)
+      .select("*")
+      .eq("blog_id", id)
+      .is("parent_comment_id", null)
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Error fetching comments:", error);
+      console.error("Error fetching comments:", error.message || error);
       return [];
     }
 
-    return data || [];
+    // Fetch profiles separately for each comment
+    const commentsWithProfiles = await Promise.all(
+      (data || []).map(async (comment) => {
+        const profile = await getProfile(comment.user_id);
+        return {
+          ...comment,
+          profiles: profile ? { username: profile.username, avatar_url: profile.avatar_url } : null
+        };
+      })
+    );
+
+    return commentsWithProfiles;
   } catch (err) {
     console.error("Unexpected error fetching comments:", err);
     return [];
@@ -428,3 +457,50 @@ export const getCurrentUser = async () => {
     return null;
   }
 };
+
+// Reaction functions
+export type Reaction = {
+  id: string;
+  blog_id: number;
+  user_id: string;
+  reaction: string;
+};
+export async function fetchReactions(blogId: number) {
+  const { data, error } = await supabase
+    .from("reactions")
+    .select("reaction")
+    .eq("blog_id", blogId);
+
+  if (error) {
+    console.error("Error fetching reactions:", error.message || error);
+    return [];
+  }
+
+  return data;
+}
+export async function upsertReaction(
+  blogId: number,
+  userId: string,
+  reaction: string
+) {
+  const { error } = await supabase
+    .from("reactions")
+    .upsert(
+      { blog_id: blogId, user_id: userId, reaction },
+      { onConflict: "blog_id,user_id" }
+    );
+
+  if (error) {
+    console.error("Error upserting reaction:", error.message || error);
+    throw error;
+  }
+}
+export async function removeReaction(blogId: number, userId: string) {
+  const { error } = await supabase
+    .from("reactions")
+    .delete()
+    .eq("blog_id", blogId)
+    .eq("user_id", userId);
+
+  if (error) throw error;
+}

@@ -36,7 +36,12 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   /* ------------------ Load user ------------------ */
   useEffect(() => {
-    getCurrentUser().then((user) => setUserId(user?.id ?? null));
+    getCurrentUser().then((user) => {
+      console.log("Current user:", user);
+      console.log("Current user id:", user?.id);
+      console.log("User object keys:", user ? Object.keys(user) : "null");
+      setUserId(user?.id ?? null);
+    });
   }, []);
 
   /* ------------------ Load blogs ------------------ */
@@ -49,9 +54,14 @@ export default function Home() {
 
   /* ------------------ Load comments & reactions ------------------ */
   const loadExtras = async (blogId: string) => {
+    const blogIdNum = parseInt(blogId);
+    if (isNaN(blogIdNum) || blogIdNum == null) {
+      console.warn("Invalid blogId for loadExtras:", blogId);
+      return;
+    }
     const [c, r] = await Promise.all([
-      getComments(parseInt(blogId)),
-      fetchReactions(blogId),
+      getComments(blogIdNum),
+      fetchReactions(blogIdNum),
     ]);
 
     setComments((prev) => ({ ...prev, [blogId]: c }));
@@ -68,7 +78,14 @@ export default function Home() {
   }, [mounted]);
 
   useEffect(() => {
-    blogs.forEach((b) => loadExtras(b.id.toString()));
+    console.log("Loading extras for blogs:", blogs.map(b => ({ id: b.id, type: typeof b.id })));
+    blogs.forEach((b) => {
+      if (b.id != null && !isNaN(Number(b.id))) {
+        loadExtras(b.id.toString());
+      } else {
+        console.warn("Skipping blog with invalid id:", b.id, typeof b.id);
+      }
+    });
   }, [blogs]);
 
   if (!mounted) return null;
@@ -119,7 +136,7 @@ export default function Home() {
         ) : (
           <div style={{ display: "grid", gap: "30px" }}>
             {blogs.length > 0 ? (
-              blogs.map((blog) => (
+              blogs.filter(blog => blog.id != null && !isNaN(Number(blog.id))).map((blog) => (
                 <article
                   key={blog.id}
                   style={{
@@ -171,27 +188,55 @@ export default function Home() {
                   {/* Reactions */}
                   <div style={{ marginTop: "15px" }}>
                     <button
-                      disabled={!userId}
+                      disabled={!userId || !blog.id}
                       onClick={async () => {
-                        await upsertReaction(blog.id.toString(), userId!, "like");
-                        loadExtras(blog.id.toString());
+                        if (!blog.id) return;
+                        try {
+                          await upsertReaction(blog.id, userId!, "like");
+                          loadExtras(blog.id.toString());
+                        } catch (error) {
+                          console.error("Error liking:", error);
+                        }
+                      }}
+                      style={{
+                        padding: "8px 12px",
+                        backgroundColor: userId && blog.id ? "#4CAF50" : "#ccc",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: userId && blog.id ? "pointer" : "not-allowed",
+                        marginRight: "5px",
+                        opacity: userId && blog.id ? 1 : 0.6
                       }}
                     >
                       👍{" "}
-                      {reactions[blog.id.toString()]?.filter((r) => r.reaction === "like")
+                      {reactions[blog.id?.toString()]?.filter((r) => r.reaction === "like")
                         .length || 0}
                     </button>
 
                     <button
-                      disabled={!userId}
+                      disabled={!userId || !blog.id}
                       onClick={async () => {
-                        await upsertReaction(blog.id.toString(), userId!, "dislike");
-                        loadExtras(blog.id.toString());
+                        if (!blog.id) return;
+                        try {
+                          await upsertReaction(blog.id, userId!, "dislike");
+                          loadExtras(blog.id.toString());
+                        } catch (error) {
+                          console.error("Error disliking:", error);
+                        }
                       }}
-                      style={{ marginLeft: "10px" }}
+                      style={{
+                        padding: "8px 12px",
+                        backgroundColor: userId && blog.id ? "#f44336" : "#ccc",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: userId && blog.id ? "pointer" : "not-allowed",
+                        opacity: userId && blog.id ? 1 : 0.6
+                      }}
                     >
                       👎{" "}
-                      {reactions[blog.id.toString()]?.filter((r) => r.reaction === "dislike")
+                      {reactions[blog.id?.toString()]?.filter((r) => r.reaction === "dislike")
                         .length || 0}
                     </button>
                   </div>
@@ -207,13 +252,14 @@ export default function Home() {
                           style={{
                             padding: "8px 0",
                             borderBottom: "1px solid #eee",
+                            backgroundColor: c.user_id === userId ? "#e3f2fd" : "transparent",
                           }}
                         >
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                            <strong>{c.profiles?.username || "Anonymous"}</strong>
+                            <strong style={{ color: "black" }}>{c.profiles?.username || "Anonymous"}</strong>
                             <span style={{ fontSize: "12px", color: "#999" }}>{new Date(c.created_at).toLocaleDateString()}</span>
                           </div>
-                          <p style={{ margin: "4px 0" }}>{c.content}</p>
+                          <p style={{ margin: "4px 0", color: "black" }}>{c.content}</p>
                         </div>
                       ))
                     ) : (
@@ -232,7 +278,16 @@ export default function Home() {
                               [blog.id.toString()]: e.target.value,
                             }))
                           }
-                          style={{ width: "100%", padding: "8px" }}
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            border: "1px solid #ccc",
+                            borderRadius: "4px",
+                            fontSize: "14px",
+                            color: "#333",
+                            minHeight: "80px",
+                            resize: "vertical"
+                          }}
                         />
                         <button
                           onClick={async () => {
@@ -244,7 +299,16 @@ export default function Home() {
                             }));
                             loadExtras(blog.id.toString());
                           }}
-                          style={{ marginTop: "5px" }}
+                          style={{
+                            marginTop: "5px",
+                            padding: "8px 16px",
+                            backgroundColor: "#2196F3",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            fontSize: "14px"
+                          }}
                         >
                           Post Comment
                         </button>

@@ -46,11 +46,24 @@ CREATE TABLE IF NOT EXISTS comments (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::TEXT, NOW()) NOT NULL
 );
 
+-- 5. Reaction Table
+create table public.reactions (
+  id uuid primary key default gen_random_uuid(),
+  blog_id BIGINT references blogs(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete cascade,
+  reaction text not null, -- 'like', 'dislike', '❤️', '😂', etc
+  created_at timestamptz default now(),
+  unique (blog_id, user_id)
+);
+
+
 -- Enable Row Level Security (RLS) for all tables
 ALTER TABLE IF EXISTS profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS blogs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS blog_images ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS comments ENABLE ROW LEVEL SECURITY;
+alter table reactions enable row level security;
+
 
 -- Drop existing policies if they exist
 DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON profiles;
@@ -113,6 +126,23 @@ CREATE POLICY "Users can update their own comments" ON comments
 
 CREATE POLICY "Users can delete their own comments" ON comments
   FOR DELETE USING (auth.uid() = user_id);
+
+-- Reactions RLS policies
+create policy "Anyone can read reactions"
+on reactions for select
+using (true);
+
+create policy "Users can add or update their reaction"
+on reactions for insert
+with check (auth.uid() = user_id);
+
+create policy "Users can update their reaction"
+on reactions for update
+using (auth.uid() = user_id);
+
+create policy "Users can delete their reaction"
+on reactions for delete
+using (auth.uid() = user_id);
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS blogs_user_id_idx ON blogs(user_id);
