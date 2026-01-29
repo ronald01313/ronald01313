@@ -200,49 +200,61 @@ export const updateBlog = async (blogId: number, updates: Partial<Blog>): Promis
 };
 
 // Blog Image functions
-export const uploadBlogImage = async (file: File, blogId: number, userId: string): Promise<string | null> => {
+export const uploadAndSaveBlogImage = async (
+  file: File,
+  blogId: number,
+  userId: string,
+  altText?: string,
+  isFeatured: boolean = false
+): Promise<BlogImage | null> => {
   try {
     const fileExt = file.name.split(".").pop();
     const fileName = `${blogId}_${userId}_${Date.now()}.${fileExt}`;
     const filePath = `blog_images/${fileName}`;
 
-    // Try to upload, if bucket doesn't exist, create it first
-    let uploadResult = await supabase.storage
+    // 1️⃣ Upload to Storage
+    const { error: uploadError } = await supabase.storage
       .from("blog-images")
       .upload(filePath, file);
 
-    // If bucket doesn't exist, create it
-    if (uploadResult.error?.message?.includes("Bucket not found")) {
-      try {
-        await supabase.storage.createBucket("blog-images", {
-          public: true,
-          fileSizeLimit: 10485760, // 10MB
-        });
-        // Retry upload
-        uploadResult = await supabase.storage
-          .from("blog-images")
-          .upload(filePath, file);
-      } catch (bucketErr) {
-        console.error("Error creating bucket:", bucketErr);
-      }
-    }
-
-    if (uploadResult.error) {
-      console.error("Error uploading image:", uploadResult.error);
+    if (uploadError) {
+      console.error("Upload error:", uploadError);
       return null;
     }
 
-    // Get the public URL
+    // 2️⃣ Get public URL
     const { data: urlData } = supabase.storage
       .from("blog-images")
       .getPublicUrl(filePath);
 
-    return urlData?.publicUrl || null;
+    if (!urlData?.publicUrl) return null;
+
+    // 3️⃣ Insert into DB table
+    const { data, error } = await supabase
+      .from("blog_images")
+      .insert([
+        {
+          blog_id: blogId,
+          image_url: urlData.publicUrl,
+          alt_text: altText,
+          is_featured: isFeatured,
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("DB insert error:", error);
+      return null;
+    }
+
+    return data;
   } catch (err) {
-    console.error("Unexpected error uploading image:", err);
+    console.error("Unexpected upload error:", err);
     return null;
   }
 };
+
 
 export const addBlogImage = async (image: Omit<BlogImage, "id" | "created_at">): Promise<BlogImage | null> => {
   try {

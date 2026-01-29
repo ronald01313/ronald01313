@@ -1,12 +1,15 @@
+"use client";
+
 import { useState, useEffect } from "react";
-import { createBlog, type Blog, getCurrentUser, uploadBlogImage, addBlogImage } from "../lib/supabase";
+import { createBlog, getCurrentUser, uploadAndSaveBlogImage, updateBlog} from "../lib/supabase";
 
 interface CreatePostProps {
   onPostCreated?: () => void;
 }
 
-export function CreatePost({ onPostCreated }: CreatePostProps) {
+export default function CreatePost({ onPostCreated }: CreatePostProps) {
   const [userId, setUserId] = useState<string | null>(null);
+  const [userLoading, setUserLoading] = useState(true);
   const [formData, setFormData] = useState({
     title: "",
     excerpt: "",
@@ -21,11 +24,18 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
 
   useEffect(() => {
     const loadUser = async () => {
-      const user = await getCurrentUser();
-      if (user) {
-        setUserId(user.id);
-      } else {
-        setError("You must be logged in to create a post");
+      try {
+        const user = await getCurrentUser();
+        if (user) {
+          setUserId(user.id);
+        } else {
+          setError("You must be logged in to create a post");
+        }
+      } catch (err) {
+        console.error("Error loading user:", err);
+        setError("Failed to load user information");
+      } finally {
+        setUserLoading(false);
       }
     };
     loadUser();
@@ -180,19 +190,15 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
         for (const img of uploadedImages) {
           if (img.fileObject) {
             // Upload to Supabase Storage
-            const imageUrl = await uploadBlogImage(img.fileObject, result.id, userId);
-            
-            if (imageUrl) {
-              // Replace preview URL with real URL in content
-              updatedContent = updatedContent.replace(img.url, imageUrl);
-              
-              // Also save to blog_images table
-              await addBlogImage({
-                blog_id: result.id,
-                image_url: imageUrl,
-                is_featured: uploadedImages.length === 1, // First image is featured
-              });
-            }
+            const image = await uploadAndSaveBlogImage(img.fileObject,result.id,userId,img.file,
+                uploadedImages.length === 1 // first image = featured
+                );
+
+                if (image) {
+                // Replace preview URL with real public URL
+                updatedContent = updatedContent.replace(img.url, image.image_url);
+                }
+
           }
         }
 
@@ -229,6 +235,14 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
       setLoading(false);
     }
   };
+
+  if (userLoading) {
+    return (
+      <div style={{ maxWidth: "700px", margin: "40px auto", padding: "30px", border: "1px solid #e0e0e0", borderRadius: "8px", textAlign: "center" }}>
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: "700px", margin: "40px auto", padding: "30px", border: "1px solid #e0e0e0", borderRadius: "8px" }}>
