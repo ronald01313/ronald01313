@@ -1,36 +1,27 @@
-
-
 import { useState, useEffect } from "react";
 import {
   fetchBlogs,
   getComments,
-  addComment,
+  //addComment,
   fetchReactions,
-  upsertReaction,
+  //upsertReaction,
   getCurrentUser,
   type Blog,
 } from "../lib/supabase";
+import Header from "../components/Header";
+import BlogPost from "../components/BlogPost";
+import FooterCTA from "../components/FooterCTA";
+//import { formatDate } from "../lib/utils";
 
 
-const formatDate = (value?: string | null) => {
-  if (!value) return "—";
 
-  const date = new Date(value);
-  if (isNaN(date.getTime())) return "—";
-
-  return date.toISOString().split("T")[0];
-};
-
-const countReactions = (reactions: any[], type: string) => {
-  return reactions?.filter((r) => r.reaction === type).length || 0;
-};
 
 
 export default function Home() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [comments, setComments] = useState<Record<string, any[]>>({});
   const [reactions, setReactions] = useState<Record<string, any[]>>({});
-  const [commentText, setCommentText] = useState<Record<string, string>>({});
+
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
@@ -92,15 +83,7 @@ export default function Home() {
 
   return (
     <div>
-       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "20px" }}>
-         <span>{formatDate(blogs[0]?.created_at)}</span>
-      <span>By {blogs[0]?.profiles?.username || "Unknown"}</span></div>
-
-      {/* Header */}
-      <header style={{ textAlign: "center", marginBottom: "50px" }}>
-        <h1 style={{ fontSize: "48px", margin: "0 0 10px 0", color: "#333" }}>My Blog</h1>
-        <p style={{ fontSize: "18px", color: "#666", margin: "0" }}>Thoughts, stories, and ideas</p>
-      </header>
+      <Header />
 
     
 
@@ -137,185 +120,15 @@ export default function Home() {
           <div style={{ display: "grid", gap: "30px" }}>
             {blogs.length > 0 ? (
               blogs.filter(blog => blog.id != null && !isNaN(Number(blog.id))).map((blog) => (
-                <article
+                <BlogPost
                   key={blog.id}
-                  style={{
-                    padding: "25px",
-                    border: "1px solid #e0e0e0",
-                    borderRadius: "8px",
-                    transition: "all 0.3s ease",
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "10px" }}>
-                    <h3 style={{ margin: "0 0 10px 0", color: "#333", fontSize: "24px" }}>
-                      {blog.title}
-                    </h3>
-                    {blog.category && <span style={{
-                      backgroundColor: "#f0f0f0",
-                      padding: "4px 12px",
-                      borderRadius: "20px",
-                      fontSize: "12px",
-                      whiteSpace: "nowrap"
-                    }}>
-                      {blog.category}
-                    </span>}
-                  </div>
-
-                  {/* Display featured image or first image */}
-                  {blog.blog_images && blog.blog_images.length > 0 && (
-                    <div style={{ marginBottom: "15px" }}>
-                      <img
-                        src={blog.blog_images.find(img => img.is_featured)?.image_url || blog.blog_images[0].image_url}
-                        alt={blog.title}
-                        style={{
-                          width: "100%",
-                          maxHeight: "300px",
-                          objectFit: "cover",
-                          borderRadius: "8px",
-                          border: "1px solid #e0e0e0"
-                        }}
-                      />
-                    </div>
-                  )}
-                  {blog.excerpt && <p style={{ color: "#666", margin: "0 0 15px 0", lineHeight: "1.6" }}>
-                    {blog.excerpt}
-                  </p>}
-                  <div style={{ display: "flex", justifyContent: "space-between", color: "#999", fontSize: "14px" }}>
-                    <span>{new Date(blog.created_at).toLocaleDateString()}</span>
-                    <span>By {blog.profiles?.username || "Unknown"}</span>
-                  </div>
-
-                  {/* Reactions */}
-                  <div style={{ marginTop: "15px" }}>
-                    <button
-                      disabled={!userId || !blog.id}
-                      onClick={async () => {
-                        if (!blog.id) return;
-                        try {
-                          await upsertReaction(blog.id, userId!, "like");
-                          loadExtras(blog.id.toString());
-                        } catch (error) {
-                          console.error("Error liking:", error);
-                        }
-                      }}
-                      style={{
-                        padding: "8px 12px",
-                        backgroundColor: userId && blog.id ? "#4CAF50" : "#ccc",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: userId && blog.id ? "pointer" : "not-allowed",
-                        marginRight: "5px",
-                        opacity: userId && blog.id ? 1 : 0.6
-                      }}
-                    >
-                      👍{" "}
-                      {reactions[blog.id?.toString()]?.filter((r) => r.reaction === "like")
-                        .length || 0}
-                    </button>
-
-                    <button
-                      disabled={!userId || !blog.id}
-                      onClick={async () => {
-                        if (!blog.id) return;
-                        try {
-                          await upsertReaction(blog.id, userId!, "dislike");
-                          loadExtras(blog.id.toString());
-                        } catch (error) {
-                          console.error("Error disliking:", error);
-                        }
-                      }}
-                      style={{
-                        padding: "8px 12px",
-                        backgroundColor: userId && blog.id ? "#f44336" : "#ccc",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: userId && blog.id ? "pointer" : "not-allowed",
-                        opacity: userId && blog.id ? 1 : 0.6
-                      }}
-                    >
-                      👎{" "}
-                      {reactions[blog.id?.toString()]?.filter((r) => r.reaction === "dislike")
-                        .length || 0}
-                    </button>
-                  </div>
-
-                  {/* Comments */}
-                  <div style={{ marginTop: "20px" }}>
-                    <h4>Comments</h4>
-
-                    {comments[blog.id.toString()]?.length ? (
-                      comments[blog.id.toString()].map((c) => (
-                        <div
-                          key={c.id}
-                          style={{
-                            padding: "8px 0",
-                            borderBottom: "1px solid #eee",
-                            backgroundColor: c.user_id === userId ? "#e3f2fd" : "transparent",
-                          }}
-                        >
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                            <strong style={{ color: "black" }}>{c.profiles?.username || "Anonymous"}</strong>
-                            <span style={{ fontSize: "12px", color: "#999" }}>{new Date(c.created_at).toLocaleDateString()}</span>
-                          </div>
-                          <p style={{ margin: "4px 0", color: "black" }}>{c.content}</p>
-                        </div>
-                      ))
-                    ) : (
-                      <p style={{ color: "#999" }}>No comments yet</p>
-                    )}
-
-                    {/* Add comment */}
-                    {userId && (
-                      <div style={{ marginTop: "10px" }}>
-                        <textarea
-                          placeholder="Write a comment..."
-                          value={commentText[blog.id.toString()] || ""}
-                          onChange={(e) =>
-                            setCommentText((prev) => ({
-                              ...prev,
-                              [blog.id.toString()]: e.target.value,
-                            }))
-                          }
-                          style={{
-                            width: "100%",
-                            padding: "8px",
-                            border: "1px solid #ccc",
-                            borderRadius: "4px",
-                            fontSize: "14px",
-                            color: "#333",
-                            minHeight: "80px",
-                            resize: "vertical"
-                          }}
-                        />
-                        <button
-                          onClick={async () => {
-                            if (!commentText[blog.id.toString()]) return;
-                            await addComment({ blog_id: blog.id, user_id: userId!, content: commentText[blog.id.toString()] });
-                            setCommentText((prev) => ({
-                              ...prev,
-                              [blog.id.toString()]: "",
-                            }));
-                            loadExtras(blog.id.toString());
-                          }}
-                          style={{
-                            marginTop: "5px",
-                            padding: "8px 16px",
-                            backgroundColor: "#2196F3",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                            fontSize: "14px"
-                          }}
-                        >
-                          Post Comment
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </article>
+                  blog={blog}
+                  comments={comments[blog.id.toString()]}
+                  reactions={reactions[blog.id.toString()]}
+                  userId={userId}
+                  onReactionUpdate={() => loadExtras(blog.id.toString())}
+                  onCommentUpdate={() => loadExtras(blog.id.toString())}
+                />
               ))
             ) : (
               <p style={{ textAlign: "center", color: "#999", padding: "40px" }}>No posts yet. Create your first post!</p>
@@ -324,26 +137,7 @@ export default function Home() {
         )}
       </section>
 
-      {/* Footer CTA */}
-      <section style={{ textAlign: "center", marginTop: "50px", padding: "30px", backgroundColor: "#f9f9f9", borderRadius: "8px" }}>
-        <h2 style={{ color: "#333", marginBottom: "10px" }}>Want to stay updated?</h2>
-        <p style={{ color: "#666", marginBottom: "20px" }}>Subscribe to get new posts delivered to your inbox</p>
-        <button
-          style={{
-            padding: "12px 30px",
-            fontSize: "16px",
-            backgroundColor: "rgb(255, 152, 0)",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            fontWeight: "500",
-            transition: "all 0.3s ease",
-          }}
-        >
-          Subscribe Now
-        </button>
-      </section>
+      <FooterCTA />
     </div>
   );
 }

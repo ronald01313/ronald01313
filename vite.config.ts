@@ -5,7 +5,16 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
   plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
+
   build: {
-    sourcemap: 'hidden',
+    sourcemap: false, // client build
+  },
+
+  ssr: {
+    sourcemap: false, // server build ← THIS is what you were missing
+  },
+
+  esbuild: {
+    sourcemap: false, // extra safety (React Router uses esbuild internally)
   },
 });
