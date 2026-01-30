@@ -7,6 +7,7 @@ export default function CreatePage() {
   const handlePostCreated = () => {
     // Trigger a refresh of the parent component
     setRefreshKey(prev => prev + 1);
+    
   };
 
   return (
