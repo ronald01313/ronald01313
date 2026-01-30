@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import CreatePost from "../components/CreatePost";
 

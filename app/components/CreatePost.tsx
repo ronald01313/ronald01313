@@ -1,4 +1,4 @@
-"use client";
+
 
 import { useState, useEffect } from "react";
 import { createBlog, getCurrentUser, uploadAndSaveBlogImage, updateBlog} from "../lib/supabase";
