@@ -54,24 +54,24 @@ export function Register() {
   };
 
   return (
-    <div style={{ maxWidth: "400px", margin: "50px auto", padding: "30px", border: "1px solid #e0e0e0", borderRadius: "8px" }}>
-      <h2 style={{ textAlign: "center", marginBottom: "30px", color: "#333" }}>Register</h2>
+    <div className="max-w-md mx-auto my-12 p-8 border border-gray-200 rounded-lg">
+      <h2 className="text-center mb-8 text-gray-800">Register</h2>
 
       {error && (
-        <div style={{ padding: "10px", marginBottom: "20px", backgroundColor: "#fee", color: "#c00", borderRadius: "4px" }}>
+        <div className="p-3 mb-5 bg-red-50 text-red-700 rounded">
           {error}
         </div>
       )}
 
       {success && (
-        <div style={{ padding: "10px", marginBottom: "20px", backgroundColor: "#efe", color: "#060", borderRadius: "4px" }}>
+        <div className="p-3 mb-5 bg-green-50 text-green-700 rounded">
           {success}
         </div>
       )}
 
       <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ display: "block", marginBottom: "5px", color: "#333", fontWeight: "500" }}>
+        <div className="mb-5">
+          <label className="block mb-2 text-gray-800 font-medium">
             Username
           </label>
           <input
@@ -79,21 +79,13 @@ export function Register() {
             name="username"
             value={formData.username}
             onChange={handleChange}
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              fontSize: "16px",
-              boxSizing: "border-box",
-              color: "#333",
-            }}
+            className="w-full p-3 border border-gray-300 rounded text-base box-border text-gray-800"
             placeholder="johndoe"
           />
         </div>
 
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ display: "block", marginBottom: "5px", color: "#333", fontWeight: "500" }}>
+        <div className="mb-5">
+          <label className="block mb-2 text-gray-800 font-medium">
             Email
           </label>
           <input
@@ -101,21 +93,13 @@ export function Register() {
             name="email"
             value={formData.email}
             onChange={handleChange}
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              fontSize: "16px",
-              boxSizing: "border-box",
-              color: "#333",
-            }}
+            className="w-full p-3 border border-gray-300 rounded text-base box-border text-gray-800"
             placeholder="your@email.com"
           />
         </div>
 
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ display: "block", marginBottom: "5px", color: "#333", fontWeight: "500" }}>
+        <div className="mb-5">
+          <label className="block mb-2 text-gray-800 font-medium">
             Password
           </label>
           <input
@@ -123,21 +107,13 @@ export function Register() {
             name="password"
             value={formData.password}
             onChange={handleChange}
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              fontSize: "16px",
-              boxSizing: "border-box",
-              color: "#333",
-            }}
+            className="w-full p-3 border border-gray-300 rounded text-base box-border text-gray-800"
             placeholder="••••••••"
           />
         </div>
 
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ display: "block", marginBottom: "5px", color: "#333", fontWeight: "500" }}>
+        <div className="mb-5">
+          <label className="block mb-2 text-gray-800 font-medium">
             Confirm Password
           </label>
           <input
@@ -145,15 +121,7 @@ export function Register() {
             name="confirmPassword"
             value={formData.confirmPassword}
             onChange={handleChange}
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              fontSize: "16px",
-              boxSizing: "border-box",
-              color: "#333",
-            }}
+            className="w-full p-3 border border-gray-300 rounded text-base box-border text-gray-800"
             placeholder="••••••••"
           />
         </div>
@@ -161,26 +129,14 @@ export function Register() {
         <button
           type="submit"
           disabled={isLoading}
-          style={{
-            width: "100%",
-            padding: "12px",
-            backgroundColor: isLoading ? "#ccc" : "rgb(156, 39, 176)",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            fontSize: "16px",
-            fontWeight: "500",
-            cursor: isLoading ? "not-allowed" : "pointer",
-            marginTop: "10px",
-            transition: "all 0.3s ease",
-          }}
+          className="w-full p-3 bg-purple-500 text-white border-none rounded text-base font-medium cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-400 mt-3 transition-all duration-300"
         >
           {isLoading ? "Registering..." : "Register"}
         </button>
       </form>
 
-      <p style={{ textAlign: "center", marginTop: "20px", color: "#666" }}>
-        Already have an account? <a href="/login" style={{ color: "#333", textDecoration: "none", fontWeight: "500" }}>Login here</a>
+      <p className="text-center mt-5 text-gray-600">
+        Already have an account? <a href="/login" className="text-gray-800 no-underline font-medium">Login here</a>
       </p>
     </div>
   );

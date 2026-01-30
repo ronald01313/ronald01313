@@ -238,31 +238,31 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
 
   if (userLoading) {
     return (
-      <div style={{ maxWidth: "700px", margin: "40px auto", padding: "30px", border: "1px solid #e0e0e0", borderRadius: "8px", textAlign: "center" }}>
+      <div className="max-w-2xl mx-auto my-10 p-8 border border-gray-200 rounded-lg text-center">
         <p>Loading...</p>
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: "700px", margin: "40px auto", padding: "30px", border: "1px solid #e0e0e0", borderRadius: "8px" }}>
-      <h2 style={{ marginBottom: "30px", color: "#333" }}>Create New Post</h2>
+    <div className="max-w-2xl mx-auto my-10 p-8 border border-gray-200 rounded-lg">
+      <h2 className="mb-8 text-gray-800">Create New Post</h2>
 
       {error && (
-        <div style={{ padding: "10px", marginBottom: "20px", backgroundColor: "#fee", color: "#c00", borderRadius: "4px" }}>
+        <div className="p-3 mb-5 bg-red-50 text-red-700 rounded">
           {error}
         </div>
       )}
 
       {success && (
-        <div style={{ padding: "10px", marginBottom: "20px", backgroundColor: "#efe", color: "#0a0", borderRadius: "4px" }}>
+        <div className="p-3 mb-5 bg-green-50 text-green-800 rounded">
           Post created successfully!
         </div>
       )}
 
       <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ display: "block", marginBottom: "5px", color: "#333", fontWeight: "500" }}>
+        <div className="mb-5">
+          <label className="block mb-2 text-gray-800 font-medium">
             Post Title
           </label>
           <input
@@ -271,22 +271,13 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
             value={formData.title}
             onChange={handleChange}
             disabled={loading || !userId}
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              fontSize: "16px",
-              boxSizing: "border-box",
-              color: "#333",
-              opacity: loading || !userId ? 0.6 : 1,
-            }}
+            className="w-full p-3 border border-gray-300 rounded text-base box-border text-gray-800 disabled:opacity-60"
             placeholder="Enter post title"
           />
         </div>
 
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ display: "block", marginBottom: "5px", color: "#333", fontWeight: "500" }}>
+        <div className="mb-5">
+          <label className="block mb-2 text-gray-800 font-medium">
             Category
           </label>
           <select
@@ -294,16 +285,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
             value={formData.category}
             onChange={handleChange}
             disabled={loading || !userId}
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              fontSize: "16px",
-              boxSizing: "border-box",
-              color: "#333",
-              opacity: loading || !userId ? 0.6 : 1,
-            }}
+            className="w-full p-3 border border-gray-300 rounded text-base box-border text-gray-800 disabled:opacity-60"
           >
             <option value="">Select a category</option>
             <option value="React">React</option>
@@ -315,8 +297,8 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
           </select>
         </div>
 
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ display: "block", marginBottom: "5px", color: "#333", fontWeight: "500" }}>
+        <div className="mb-5">
+          <label className="block mb-2 text-gray-800 font-medium">
             Excerpt
           </label>
           <textarea
@@ -324,18 +306,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
             value={formData.excerpt}
             onChange={handleChange}
             disabled={loading || !userId}
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              fontSize: "16px",
-              boxSizing: "border-box",
-              minHeight: "80px",
-              fontFamily: "inherit",
-              color: "#333",
-              opacity: loading || !userId ? 0.6 : 1,
-            }}
+            className="w-full p-3 border border-gray-300 rounded text-base box-border min-h-20 font-inherit text-gray-800 disabled:opacity-60"
             placeholder="Brief summary of your post"
           />
         </div>
@@ -479,46 +450,24 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
         </div>
 
         {/* Image Upload Section */}
-        <div style={{ marginBottom: "20px", padding: "15px", backgroundColor: "#f0f7ff", borderRadius: "8px", border: "2px solid #4ECDC4" }}>
-          <label style={{ display: "block", marginBottom: "10px", color: "#333", fontWeight: "600", fontSize: "16px" }}>
+        <div className="mb-5 p-4 bg-blue-50 rounded-lg border-2 border-teal-400">
+          <label className="block mb-3 text-gray-800 font-semibold text-base">
             📷 Upload Images
           </label>
-          
+
           {/* File Input Wrapper with Styled Button */}
-          <div style={{
-            position: "relative",
-            display: "inline-block",
-            width: "100%",
-          }}>
+          <div className="relative inline-block w-full">
             <input
               type="file"
               accept="image/*"
               onChange={handleImageUpload}
               disabled={loading || !userId || imageLoading}
-              style={{
-                position: "absolute",
-                opacity: 0,
-                width: "100%",
-                height: "100%",
-                cursor: loading || !userId || imageLoading ? "not-allowed" : "pointer",
-              }}
+              className="absolute opacity-0 w-full h-full cursor-pointer disabled:cursor-not-allowed"
             />
             <button
               type="button"
               disabled={loading || !userId || imageLoading}
-              style={{
-                width: "100%",
-                padding: "12px 16px",
-                backgroundColor: "#4ECDC4",
-                border: "2px solid #4ECDC4",
-                borderRadius: "4px",
-                cursor: loading || !userId || imageLoading ? "not-allowed" : "pointer",
-                color: "white",
-                fontWeight: "600",
-                fontSize: "14px",
-                transition: "all 0.2s",
-                opacity: loading || !userId || imageLoading ? 0.6 : 1,
-              }}
+              className="w-full p-3 bg-teal-400 border-2 border-teal-400 rounded cursor-pointer text-white font-semibold text-sm transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={(e) => {
                 const input = (e.currentTarget.parentElement?.querySelector('input[type="file"]') as HTMLInputElement);
                 input?.click();
@@ -527,30 +476,24 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
               {imageLoading ? "⏳ Uploading..." : "📁 Choose Image File"}
             </button>
           </div>
-          
-          <p style={{ fontSize: "12px", color: "#666", margin: "8px 0 0 0", fontWeight: "500" }}>
+
+          <p className="text-xs text-gray-600 mt-2 font-medium">
             ✅ Upload PNG, JPG, GIF, or WebP
           </p>
 
           {/* Image Previews */}
           {uploadedImages.length > 0 && (
-            <div style={{ marginTop: "15px", padding: "10px", backgroundColor: "#ffffff", borderRadius: "4px", border: "1px solid #ddd" }}>
-              <h4 style={{ color: "#4ECDC4", marginBottom: "10px", fontSize: "14px" }}>✓ Uploaded Images ({uploadedImages.length}):</h4>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))", gap: "10px" }}>
+            <div className="mt-4 p-3 bg-white rounded border border-gray-300">
+              <h4 className="text-teal-400 mb-3 text-sm">✓ Uploaded Images ({uploadedImages.length}):</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 {uploadedImages.map((img, idx) => (
-                  <div key={idx} style={{ position: "relative", boxShadow: "0 2px 4px rgba(78, 205, 196, 0.2)" }}>
+                  <div key={idx} className="relative shadow-md">
                     <img
                       src={img.url}
                       alt={img.file}
-                      style={{
-                        width: "100%",
-                        height: "100px",
-                        objectFit: "cover",
-                        borderRadius: "4px",
-                        border: "2px solid #4ECDC4",
-                      }}
+                      className="w-full h-24 object-cover rounded border-2 border-teal-400"
                     />
-                    <p style={{ fontSize: "11px", color: "#666", margin: "5px 0 0 0", textAlign: "center", wordBreak: "break-word" }}>
+                    <p className="text-xs text-gray-600 mt-1 text-center break-words">
                       {img.file}
                     </p>
                   </div>
@@ -563,19 +506,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
         <button
           type="submit"
           disabled={loading || !userId}
-          style={{
-            width: "100%",
-            padding: "12px",
-            backgroundColor: loading || !userId ? "#999" : "rgb(76, 175, 80)",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            fontSize: "16px",
-            fontWeight: "500",
-            cursor: loading || !userId ? "not-allowed" : "pointer",
-            marginTop: "10px",
-            transition: "all 0.3s ease",
-          }}
+          className="w-full p-3 bg-green-500 text-white border-none rounded text-base font-medium cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-400 mt-3 transition-all duration-300"
         >
           {!userId ? "Please log in to create posts" : loading ? "Creating..." : "Create Post"}
         </button>

@@ -14,54 +14,35 @@ interface BlogPostProps {
 
 export default function BlogPost({ blog, comments, reactions, userId, onReactionUpdate, onCommentUpdate }: BlogPostProps) {
   return (
-    <article
-      style={{
-        padding: "25px",
-        border: "1px solid #e0e0e0",
-        borderRadius: "8px",
-        transition: "all 0.3s ease",
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "10px" }}>
-        <h3 style={{ margin: "0 0 10px 0", color: "#333", fontSize: "24px" }}>
+    <article className="p-6 border border-gray-200 rounded-lg transition-all duration-300 hover:shadow-md">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3">
+        <h3 className="m-0 mb-2 sm:mb-0 text-gray-800 text-xl sm:text-2xl">
           {blog.title}
         </h3>
         {blog.category && (
-          <span style={{
-            backgroundColor: "#f0f0f0",
-            padding: "4px 12px",
-            borderRadius: "20px",
-            fontSize: "12px",
-            whiteSpace: "nowrap"
-          }}>
+          <span className="bg-gray-100 px-3 py-1 rounded-full text-xs whitespace-nowrap mt-2 sm:mt-0">
             {blog.category}
           </span>
         )}
       </div>
 
       {blog.blog_images && blog.blog_images.length > 0 && (
-        <div style={{ marginBottom: "15px" }}>
+        <div className="mb-4">
           <img
             src={blog.blog_images.find(img => img.is_featured)?.image_url || blog.blog_images[0].image_url}
             alt={blog.title}
-            style={{
-              width: "100%",
-              maxHeight: "300px",
-              objectFit: "cover",
-              borderRadius: "8px",
-              border: "1px solid #e0e0e0"
-            }}
+            className="w-full max-h-64 sm:max-h-80 object-cover rounded-lg border border-gray-200"
           />
         </div>
       )}
 
       {blog.excerpt && (
-        <p style={{ color: "#666", margin: "0 0 15px 0", lineHeight: "1.6" }}>
+        <p className="text-gray-600 m-0 mb-4 leading-relaxed text-sm sm:text-base">
           {blog.excerpt}
         </p>
       )}
 
-      <div style={{ display: "flex", justifyContent: "space-between", color: "#999", fontSize: "14px" }}>
+      <div className="flex flex-col sm:flex-row justify-between text-gray-500 text-sm mb-4">
         <span>{new Date(blog.created_at).toLocaleDateString()}</span>
         <span>By {blog.profiles?.username || "Unknown"}</span>
       </div>

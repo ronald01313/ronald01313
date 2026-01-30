@@ -89,35 +89,24 @@ export default function Home() {
 
       {/* Featured Posts */}
       <section>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" }}>
-          <h2 style={{ fontSize: "32px", margin: "0", color: "#333" }}>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+          <h2 className="text-3xl sm:text-4xl m-0 text-gray-800">
             Latest Posts {blogs.length > 0 && `(${blogs.length} ${blogs.length === 1 ? "Post" : "Posts"})`}
           </h2>
           <button
             onClick={loadBlogs}
             disabled={loading}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: "#2196F3",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: loading ? "not-allowed" : "pointer",
-              fontSize: "14px",
-              fontWeight: "600",
-              opacity: loading ? 0.6 : 1,
-              transition: "all 0.2s"
-            }}
+            className="mt-4 sm:mt-0 px-4 py-2 bg-blue-500 text-white border-none rounded cursor-pointer text-sm font-semibold opacity-60 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
           >
             {loading ? "Refreshing..." : "🔄 Refresh"}
           </button>
         </div>
         {loading ? (
-          <div style={{ textAlign: "center", padding: "40px", color: "#999" }}>
+          <div className="text-center py-10 text-gray-500">
             <p>Loading posts...</p>
           </div>
         ) : (
-          <div style={{ display: "grid", gap: "30px" }}>
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {blogs.length > 0 ? (
               blogs.filter(blog => blog.id != null && !isNaN(Number(blog.id))).map((blog) => (
                 <BlogPost
@@ -131,7 +120,7 @@ export default function Home() {
                 />
               ))
             ) : (
-              <p style={{ textAlign: "center", color: "#999", padding: "40px" }}>No posts yet. Create your first post!</p>
+              <p className="text-center text-gray-500 py-10 col-span-full">No posts yet. Create your first post!</p>
             )}
           </div>
         )}
