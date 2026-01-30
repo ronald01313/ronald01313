@@ -3,11 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "react-router build",
     "dev": "react-router dev",
-    "build": "react-router build",         
-    "start": "react-router-server start",
+    "start": "react-router-server ./build/server/index.js.map",
     "typecheck": "react-router typegen && tsc"
-    
   },
   "dependencies": {
     "@react-router/node": "7.12.0",
