@@ -21,6 +21,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
+  const [imageUploadSuccess, setImageUploadSuccess] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -123,11 +124,13 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
         const imageName = file.name;
 
         // Store file reference for later upload (not the preview URL)
-        setUploadedImages((prev) => [...prev, { 
+        setUploadedImages((prev) => [...prev, {
           url: previewUrl, // Preview for display
           file: imageName,
           fileObject: file // Store the actual file object
         }]);
+        setImageUploadSuccess(true);
+        setTimeout(() => setImageUploadSuccess(false), 3000);
       };
       reader.readAsDataURL(file);
     } catch (err) {
@@ -217,6 +220,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
           category: "",
         });
         setUploadedImages([]);
+        setImageUploadSuccess(false);
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
 
@@ -246,17 +250,17 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
 
   return (
     <div className="max-w-2xl mx-auto my-10 p-8 border border-gray-200 rounded-lg">
+      {success && (
+        <div className="p-3 mb-5 bg-green-50 text-green-800 rounded">
+          Create Post successfully
+        </div>
+      )}
+
       <h2 className="mb-8 text-gray-800">Create New Post</h2>
 
       {error && (
         <div className="p-3 mb-5 bg-red-50 text-red-700 rounded">
           {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="p-3 mb-5 bg-green-50 text-green-800 rounded">
-          Post created successfully!
         </div>
       )}
 
@@ -476,6 +480,12 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
               {imageLoading ? "⏳ Uploading..." : "📁 Choose Image File"}
             </button>
           </div>
+
+          {imageUploadSuccess && (
+            <div className="p-3 mb-3 bg-green-50 text-green-700 rounded">
+              Image uploaded successfully!
+            </div>
+          )}
 
           <p className="text-xs text-gray-600 mt-2 font-medium">
             ✅ Upload PNG, JPG, GIF, or WebP
