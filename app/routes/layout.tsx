@@ -80,9 +80,11 @@ function NavLinks({ user, onClick }: { user?: any; onClick?: () => void }) {
 
   return (
     <>
-      <a href="/" className={linkClass} onClick={onClick}>
-        Home
-      </a>
+      {user && (
+        <a href="/" className={linkClass} onClick={onClick}>
+          Home
+        </a>
+      )}
       {user && (
         <>
           <a href="/create" className={linkClass} onClick={onClick}>
@@ -110,9 +112,6 @@ function NavLinks({ user, onClick }: { user?: any; onClick?: () => void }) {
         <>
           <a href="/login" className={linkClass} onClick={onClick}>
             Login
-          </a>
-          <a href="/register" className={linkClass} onClick={onClick}>
-            Register
           </a>
         </>
       )}
