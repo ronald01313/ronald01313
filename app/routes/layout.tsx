@@ -1,8 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
+import { getCurrentUser } from "../lib/supabase";
 
 export default function Layout() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    getCurrentUser().then(setUser);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 m-0 p-0">
@@ -48,14 +54,14 @@ export default function Layout() {
 
             {/* Desktop Menu */}
             <div className="hidden sm:flex gap-3">
-              <NavLinks />
+              <NavLinks user={user} />
             </div>
           </div>
 
           {/* Mobile Menu */}
           {isMenuOpen && (
             <div className="flex flex-col gap-3 mt-4 sm:hidden">
-              <NavLinks onClick={() => setIsMenuOpen(false)} />
+              <NavLinks user={user} onClick={() => setIsMenuOpen(false)} />
             </div>
           )}
         </nav>
@@ -68,7 +74,7 @@ export default function Layout() {
 }
 
 /* Reusable Nav Links */
-function NavLinks({ onClick }: { onClick?: () => void }) {
+function NavLinks({ user, onClick }: { user?: any; onClick?: () => void }) {
   const linkClass =
     "px-3 py-2 bg-gray-100 text-gray-800 rounded cursor-pointer font-medium text-sm transition-all duration-300 no-underline block text-center hover:bg-gray-200";
 
@@ -77,18 +83,39 @@ function NavLinks({ onClick }: { onClick?: () => void }) {
       <a href="/" className={linkClass} onClick={onClick}>
         Home
       </a>
-      <a href="/create" className={linkClass} onClick={onClick}>
-        Create Post
-      </a>
-      <a href="/manage" className={linkClass} onClick={onClick}>
-        Manage Posts
-      </a>
-      <a href="/login" className={linkClass} onClick={onClick}>
-        Login
-      </a>
-      <a href="/register" className={linkClass} onClick={onClick}>
-        Register
-      </a>
+      {user && (
+        <>
+          <a href="/create" className={linkClass} onClick={onClick}>
+            Create Post
+          </a>
+          <a href="/manage" className={linkClass} onClick={onClick}>
+            Manage Posts
+          </a>
+          <a href="/profile" className={linkClass} onClick={onClick}>
+            Profile
+          </a>
+          <button
+            onClick={async () => {
+              const { signOut } = await import("../lib/supabase");
+              await signOut();
+              window.location.href = "/";
+            }}
+            className={linkClass}
+          >
+            Logout
+          </button>
+        </>
+      )}
+      {!user && (
+        <>
+          <a href="/login" className={linkClass} onClick={onClick}>
+            Login
+          </a>
+          <a href="/register" className={linkClass} onClick={onClick}>
+            Register
+          </a>
+        </>
+      )}
     </>
   );
 }

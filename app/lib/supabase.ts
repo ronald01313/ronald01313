@@ -150,6 +150,26 @@ export const getUserBlogs = async (userId: string): Promise<Blog[]> => {
   }
 };
 
+export const getBlogById = async (blogId: number): Promise<Blog | null> => {
+  try {
+    const { data, error } = await supabase
+      .from("blogs")
+      .select("*")
+      .eq("id", blogId)
+      .single();
+
+    if (error) {
+      console.error("Error fetching blog by id:", error);
+      return null;
+    }
+
+    return data;
+  } catch (err) {
+    console.error("Unexpected error fetching blog by id:", err);
+    return null;
+  }
+};
+
 export const createBlog = async (blog: Omit<Blog, "id" | "created_at" | "updated_at">): Promise<Blog | null> => {
   try {
     const { data, error } = await supabase

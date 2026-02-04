@@ -27,9 +27,9 @@ export function Login() {
       setSuccess(result.message);
       setEmail("");
       setPassword("");
-      // Redirect to home after successful login
+      // Redirect to profile after successful login
       setTimeout(() => {
-        window.location.href = "/";
+        window.location.href = "/profile";
       }, 1500);
     } else {
       setError(result.message);

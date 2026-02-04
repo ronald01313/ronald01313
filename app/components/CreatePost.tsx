@@ -1,13 +1,19 @@
 
 
 import { useState, useEffect } from "react";
-import { createBlog, getCurrentUser, uploadAndSaveBlogImage, updateBlog} from "../lib/supabase";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { createBlog, getCurrentUser, uploadAndSaveBlogImage, updateBlog, getBlogById} from "../lib/supabase";
 
 interface CreatePostProps {
   onPostCreated?: () => void;
 }
 
 export default function CreatePost({ onPostCreated }: CreatePostProps) {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const editId = searchParams.get('edit');
+  const [isEditing, setIsEditing] = useState(false);
+
   const [userId, setUserId] = useState<string | null>(null);
   const [userLoading, setUserLoading] = useState(true);
   const [formData, setFormData] = useState({
@@ -41,6 +47,36 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
     };
     loadUser();
   }, []);
+
+  useEffect(() => {
+    const loadBlogForEdit = async () => {
+      if (editId && userId) {
+        try {
+          const blogId = parseInt(editId);
+          if (isNaN(blogId)) {
+            setError("Invalid blog ID");
+            return;
+          }
+          const blog = await getBlogById(blogId);
+          if (blog && blog.user_id === userId) {
+            setFormData({
+              title: blog.title,
+              excerpt: blog.excerpt || "",
+              content: blog.content,
+              category: blog.category || "",
+            });
+            setIsEditing(true);
+          } else {
+            setError("Blog not found or you don't have permission to edit it");
+          }
+        } catch (err) {
+          console.error("Error loading blog for edit:", err);
+          setError("Failed to load blog for editing");
+        }
+      }
+    };
+    loadBlogForEdit();
+  }, [editId, userId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -175,66 +211,114 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
     try {
       let finalContent = formData.content;
 
-      // Upload images to Supabase Storage first (temporary - before blog creation)
-      // We need to create the blog first to get an ID, then upload images
-      const result = await createBlog({
-        user_id: userId,
-        title: formData.title,
-        excerpt: formData.excerpt,
-        content: finalContent,
-        category: formData.category,
-        published: true, // Changed to true for testing
-      });
-
-      if (result) {
-        // Now upload images and update content with real URLs
-        let updatedContent = finalContent;
-        
-        for (const img of uploadedImages) {
-          if (img.fileObject) {
-            // Upload to Supabase Storage
-            const image = await uploadAndSaveBlogImage(img.fileObject,result.id,userId,img.file,
-                uploadedImages.length === 1 // first image = featured
-                );
-
-                if (image) {
-                // Replace preview URL with real public URL
-                updatedContent = updatedContent.replace(img.url, image.image_url);
-                }
-
-          }
-        }
-
-        // Update blog content with real image URLs if any images were uploaded
-        if (updatedContent !== finalContent) {
-          await updateBlog(result.id, {
-            content: updatedContent,
-          });
-        }
-
-        // Reset form
-        setFormData({
-          title: "",
-          excerpt: "",
-          content: "",
-          category: "",
+      if (isEditing && editId) {
+        // Update existing blog
+        const blogId = parseInt(editId);
+        const result = await updateBlog(blogId, {
+          title: formData.title,
+          excerpt: formData.excerpt,
+          content: finalContent,
+          category: formData.category,
         });
-        setUploadedImages([]);
-        setImageUploadSuccess(false);
-        setSuccess(true);
-        setTimeout(() => setSuccess(false), 3000);
 
-        // Notify parent to refresh posts
-        if (onPostCreated) {
-          onPostCreated();
+        if (result) {
+          // Handle image uploads for editing (if any new images)
+          let updatedContent = finalContent;
+
+          for (const img of uploadedImages) {
+            if (img.fileObject) {
+              const image = await uploadAndSaveBlogImage(img.fileObject, blogId, userId, img.file,
+                uploadedImages.length === 1
+              );
+
+              if (image) {
+                updatedContent = updatedContent.replace(img.url, image.image_url);
+              }
+            }
+          }
+
+          if (updatedContent !== finalContent) {
+            await updateBlog(blogId, {
+              content: updatedContent,
+            });
+          }
+
+          setSuccess(true);
+          setTimeout(() => setSuccess(false), 3000);
+
+          // Navigate to profile page with success notification
+          navigate("/profile?edited=true");
+
+          // Notify parent to refresh posts
+          if (onPostCreated) {
+            onPostCreated();
+          }
+        } else {
+          setError("Failed to update post. Please try again.");
         }
       } else {
-        setError("Failed to create post. Please try again.");
+        // Create new blog
+        const result = await createBlog({
+          user_id: userId,
+          title: formData.title,
+          excerpt: formData.excerpt,
+          content: finalContent,
+          category: formData.category,
+          published: true,
+        });
+
+        if (result) {
+          // Now upload images and update content with real URLs
+          let updatedContent = finalContent;
+
+          for (const img of uploadedImages) {
+            if (img.fileObject) {
+              const image = await uploadAndSaveBlogImage(img.fileObject, result.id, userId, img.file,
+                uploadedImages.length === 1
+              );
+
+              if (image) {
+                updatedContent = updatedContent.replace(img.url, image.image_url);
+              }
+            }
+          }
+
+          if (updatedContent !== finalContent) {
+            await updateBlog(result.id, {
+              content: updatedContent,
+            });
+          }
+
+          // Navigate to the newly created post
+          navigate(`/post/${result.id}`);
+
+          // Navigate to the newly created post
+          navigate(`/post/${result.id}`);
+
+          // Reset form
+          setFormData({
+            title: "",
+            excerpt: "",
+            content: "",
+            category: "",
+          });
+          setUploadedImages([]);
+          setImageUploadSuccess(false);
+          setSuccess(true);
+          setTimeout(() => setSuccess(false), 3000);
+
+          // Notify parent to refresh posts
+          if (onPostCreated) {
+            onPostCreated();
+          }
+        } else {
+          setError("Failed to create post. Please try again.");
+        }
       }
     } catch (err) {
-      console.error("Error creating post:", err);
-      const errorMessage = err instanceof Error ? err.message : "An error occurred while creating the post.";
-      setError(`Failed to create post: ${errorMessage}`);
+      console.error("Error submitting post:", err);
+      const errorMessage = err instanceof Error ? err.message : "An error occurred while submitting the post.";
+      setError(`Failed to ${isEditing ? 'update' : 'create'} post: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -252,11 +336,11 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
     <div className="max-w-2xl mx-auto my-10 p-8 border border-gray-200 rounded-lg">
       {success && (
         <div className="p-3 mb-5 bg-green-50 text-green-800 rounded">
-          Create Post successfully
+          {isEditing ? "Post updated successfully" : "Create Post successfully"}
         </div>
       )}
 
-      <h2 className="mb-8 text-gray-800">Create New Post</h2>
+      <h2 className="mb-8 text-gray-800">{isEditing ? "Edit Post" : "Create New Post"}</h2>
 
       {error && (
         <div className="p-3 mb-5 bg-red-50 text-red-700 rounded">

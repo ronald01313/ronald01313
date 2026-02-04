@@ -2,29 +2,27 @@ import { useState, useEffect } from "react";
 import {
   fetchBlogs,
   getComments,
-  //addComment,
   fetchReactions,
-  //upsertReaction,
   getCurrentUser,
   type Blog,
 } from "../lib/supabase";
 import Header from "../components/Header";
 import BlogPost from "../components/BlogPost";
 import FooterCTA from "../components/FooterCTA";
-//import { formatDate } from "../lib/utils";
-
-
-
-
+import PostModal from "../components/PostModal";
 
 export default function Home() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [comments, setComments] = useState<Record<string, any[]>>({});
   const [reactions, setReactions] = useState<Record<string, any[]>>({});
-
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+
+  // Modal state
+  const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   /* ------------------ Load user ------------------ */
   useEffect(() => {
     getCurrentUser().then((user) => {
@@ -39,7 +37,9 @@ export default function Home() {
   const loadBlogs = async () => {
     setLoading(true);
     const data = await fetchBlogs();
-    setBlogs(data);
+    // Sort blogs by created_at in descending order (latest first)
+    const sortedData = data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    setBlogs(sortedData);
     setLoading(false);
   };
 
@@ -79,13 +79,29 @@ export default function Home() {
     });
   }, [blogs]);
 
+  // Modal handlers
+  const handlePostClick = async (blog: Blog) => {
+    setSelectedBlog(blog);
+    await loadExtras(blog.id.toString()); // Ensure comments are loaded
+    setIsModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setSelectedBlog(null);
+  };
+
+  const handleCommentUpdate = async () => {
+    if (selectedBlog) {
+      await loadExtras(selectedBlog.id.toString());
+    }
+  };
+
   if (!mounted) return null;
 
   return (
     <div>
       <Header />
-
-    
 
       {/* Featured Posts */}
       <section>
@@ -106,7 +122,7 @@ export default function Home() {
             <p>Loading posts...</p>
           </div>
         ) : (
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          <div className="flex flex-col gap-8">
             {blogs.length > 0 ? (
               blogs.filter(blog => blog.id != null && !isNaN(Number(blog.id))).map((blog) => (
                 <BlogPost
@@ -117,6 +133,7 @@ export default function Home() {
                   userId={userId}
                   onReactionUpdate={() => loadExtras(blog.id.toString())}
                   onCommentUpdate={() => loadExtras(blog.id.toString())}
+                  onPostClick={() => handlePostClick(blog)}
                 />
               ))
             ) : (
@@ -127,6 +144,19 @@ export default function Home() {
       </section>
 
       <FooterCTA />
+
+      {/* Post Modal */}
+      {selectedBlog && (
+        <PostModal
+          blog={selectedBlog}
+          comments={comments[selectedBlog.id.toString()] || []}
+          reactions={reactions[selectedBlog.id.toString()] || []}
+          userId={userId}
+          isOpen={isModalOpen}
+          onClose={handleModalClose}
+          onCommentUpdate={handleCommentUpdate}
+        />
+      )}
     </div>
   );
 }
