@@ -33,7 +33,7 @@ export default function BlogPost({ blog, comments, reactions, userId, onReaction
       {blog.blog_images && blog.blog_images.length > 0 && (
         <div className="mb-6">
           <img
-            src={blog.blog_images.find(img => img.is_featured)?.image_url || blog.blog_images[0].image_url}
+      src={`${blog.blog_images.find(img => img.is_featured)?.image_url || blog.blog_images[0].image_url}?t=${Date.now()}`}
             alt={blog.title}
             className="w-full max-h-80 lg:max-h-96 object-cover rounded-lg border border-gray-100 shadow-sm"
           />

@@ -154,7 +154,7 @@ export const getBlogById = async (blogId: number): Promise<Blog | null> => {
   try {
     const { data, error } = await supabase
       .from("blogs")
-      .select("*")
+      .select("*, blog_images(*)")
       .eq("id", blogId)
       .single();
 
@@ -163,7 +163,12 @@ export const getBlogById = async (blogId: number): Promise<Blog | null> => {
       return null;
     }
 
-    return data;
+    // Fetch profile separately
+    const profile = await getProfile(data.user_id);
+    return {
+      ...data,
+      profiles: profile
+    };
   } catch (err) {
     console.error("Unexpected error fetching blog by id:", err);
     return null;

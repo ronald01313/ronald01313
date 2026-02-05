@@ -1,3 +1,4 @@
+
 -- BlogApp Database Schema
 -- Run this SQL in your Supabase SQL Editor to create the complete schema
 
@@ -106,12 +107,12 @@ CREATE POLICY "Blog images are viewable with blog" ON blog_images
 
 CREATE POLICY "Users can insert images for their blogs" ON blog_images
   FOR INSERT WITH CHECK (
-    auth.uid() = (SELECT user_id FROM blogs WHERE id = blog_images.blog_id)
+    auth.uid() = (SELECT user_id FROM blogs WHERE id = blog_id)
   );
 
 CREATE POLICY "Users can delete their blog images" ON blog_images
   FOR DELETE USING (
-    auth.uid() = (SELECT user_id FROM blogs WHERE id = blog_images.blog_id)
+    auth.uid() = (SELECT user_id FROM blogs WHERE id = blog_id)
   );
 
 -- Comments RLS policies

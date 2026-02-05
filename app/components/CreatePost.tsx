@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { createBlog, getCurrentUser, uploadAndSaveBlogImage, updateBlog, getBlogById} from "../lib/supabase";
+import { createBlog, getCurrentUser, uploadAndSaveBlogImage, updateBlog, getBlogById, supabase} from "../lib/supabase";
 
 interface CreatePostProps {
   onPostCreated?: () => void;
@@ -22,7 +22,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
     content: "",
     category: "",
   });
-  const [uploadedImages, setUploadedImages] = useState<{ url: string; file: string; fileObject?: File }[]>([]);
+  const [uploadedImages, setUploadedImages] = useState<{ url: string; file: string; fileObject?: File; existing?: boolean; id?: number }[]>([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -65,6 +65,9 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
               content: blog.content,
               category: blog.category || "",
             });
+
+            // Don't load existing images - we'll replace them entirely when editing
+
             setIsEditing(true);
           } else {
             setError("Blog not found or you don't have permission to edit it");
@@ -225,14 +228,22 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
           // Handle image uploads for editing (if any new images)
           let updatedContent = finalContent;
 
-          for (const img of uploadedImages) {
-            if (img.fileObject) {
-              const image = await uploadAndSaveBlogImage(img.fileObject, blogId, userId, img.file,
-                uploadedImages.length === 1
-              );
+          const newImages = uploadedImages.filter(img => img.fileObject);
 
-              if (image) {
-                updatedContent = updatedContent.replace(img.url, image.image_url);
+          if (newImages.length > 0) {
+            // Delete all existing blog_images for this blog
+            await supabase.from('blog_images').delete().eq('blog_id', blogId);
+
+            let firstNew = true;
+            for (const img of uploadedImages) {
+              if (img.fileObject) {
+                // Upload with correct is_featured
+                const image = await uploadAndSaveBlogImage(img.fileObject, blogId, userId, img.file, firstNew);
+
+                if (image) {
+                  updatedContent = updatedContent.replace(img.url, image.image_url);
+                }
+                firstNew = false;
               }
             }
           }
@@ -246,8 +257,8 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
           setSuccess(true);
           setTimeout(() => setSuccess(false), 3000);
 
-          // Navigate to profile page with success notification
-          navigate("/profile?edited=true");
+          // Navigate to home page with full reload to ensure fresh data
+          window.location.href = `/?t=${Date.now()}`;
 
           // Notify parent to refresh posts
           if (onPostCreated) {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import {
   fetchBlogs,
   getComments,
@@ -12,12 +13,15 @@ import FooterCTA from "../components/FooterCTA";
 import PostModal from "../components/PostModal";
 
 export default function Home() {
+  const location = useLocation();
+  const componentKey = location.key || 'home';
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [comments, setComments] = useState<Record<string, any[]>>({});
   const [reactions, setReactions] = useState<Record<string, any[]>>({});
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Modal state
   const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null);
@@ -65,7 +69,34 @@ export default function Home() {
 
   useEffect(() => {
     if (!mounted) return;
-    loadBlogs();
+
+    // Always check if we need to refresh due to post edits
+    const needsRefresh = localStorage.getItem('blogDataChanged');
+    if (needsRefresh === 'true') {
+      localStorage.removeItem('blogDataChanged');
+      loadBlogs();
+    } else {
+      loadBlogs();
+    }
+  }, [mounted]);
+
+  // Also check for data changes on every render (in case component was already mounted)
+  useEffect(() => {
+    const checkForDataChanges = () => {
+      const needsRefresh = localStorage.getItem('blogDataChanged');
+      if (needsRefresh === 'true' && mounted) {
+        localStorage.removeItem('blogDataChanged');
+        loadBlogs();
+      }
+    };
+
+    // Check immediately
+    checkForDataChanges();
+
+    // Also check periodically (every 1 second) in case the flag was set while component was mounted
+    const interval = setInterval(checkForDataChanges, 1000);
+
+    return () => clearInterval(interval);
   }, [mounted]);
 
   useEffect(() => {
@@ -78,6 +109,44 @@ export default function Home() {
       }
     });
   }, [blogs]);
+
+  // Force reload when refreshKey changes (triggered by post edits)
+  useEffect(() => {
+    if (refreshKey > 0) {
+      loadBlogs();
+    }
+  }, [refreshKey]);
+
+  // Refresh blogs when data changes (triggered by post edits)
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'blogDataChanged' && mounted) {
+        loadBlogs();
+      }
+    };
+
+    const handleCustomEvent = () => {
+      if (mounted) {
+        loadBlogs();
+      }
+    };
+
+    const handleForceRefresh = () => {
+      if (mounted) {
+        setRefreshKey(prev => prev + 1);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('blogDataChanged', handleCustomEvent);
+    window.addEventListener('forceHomeRefresh', handleForceRefresh);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('blogDataChanged', handleCustomEvent);
+      window.removeEventListener('forceHomeRefresh', handleForceRefresh);
+    };
+  }, [mounted]);
 
   // Modal handlers
   const handlePostClick = async (blog: Blog) => {
@@ -126,7 +195,7 @@ export default function Home() {
             {blogs.length > 0 ? (
               blogs.filter(blog => blog.id != null && !isNaN(Number(blog.id))).map((blog) => (
                 <BlogPost
-                  key={blog.id}
+                  key={`${blog.id}-${refreshKey}`}
                   blog={blog}
                   comments={comments[blog.id.toString()]}
                   reactions={reactions[blog.id.toString()]}
