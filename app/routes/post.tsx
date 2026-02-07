@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { getBlogById, type Blog } from "../lib/supabase";
 import Header from "../components/Header";
 
@@ -45,9 +45,10 @@ export default function PostPage() {
   if (loading) {
     return (
       <div>
-        <Header />
-        <div className="text-center py-10 text-gray-500">
-          <p>Loading post...</p>
+        <Header compact subtitle="Loading the latest stories and ideas..." />
+        <div className="text-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading post...</p>
         </div>
       </div>
     );
@@ -56,32 +57,41 @@ export default function PostPage() {
   if (error || !blog) {
     return (
       <div>
-        <Header />
+        <Header compact title="Post Not Found" subtitle="Sorry, we couldn't find what you were looking for." />
         <div className="text-center py-10">
-          <p className="text-red-500">{error || "Post not found"}</p>
-          <a href="/" className="text-blue-500 hover:underline">Go back to home</a>
+          <p className="text-red-500 mb-6">{error || "Post not found"}</p>
+          <Link to="/" className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-md">Go back to home</Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <Header />
+    <div className="pb-12">
+      <Header 
+        compact 
+        title={blog.title} 
+        subtitle={`Published on ${new Date(blog.created_at).toLocaleDateString()} by ${blog.profiles?.username || "Anonymous"}`}
+      />
 
-      <article className="max-w-4xl mx-auto py-8 px-4">
-        <header className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">{blog.title}</h1>
-          <div className="flex items-center text-gray-600 mb-4">
-            <span className="mr-4">By {blog.profiles?.username || "Anonymous"}</span>
-            <span>Published on {new Date(blog.created_at).toLocaleDateString()}</span>
-          </div>
-          {blog.category && (
-            <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+      <article className="max-w-4xl mx-auto bg-white p-8 sm:p-12 rounded-3xl border border-gray-100 shadow-sm">
+        {blog.category && (
+          <div className="mb-6">
+            <span className="inline-block bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm font-semibold border border-blue-100">
               {blog.category}
             </span>
-          )}
-        </header>
+          </div>
+        )}
+
+        {blog.blog_images?.[0] && (
+          <div className="mb-10 overflow-hidden rounded-2xl shadow-lg">
+            <img 
+              src={blog.blog_images[0].image_url} 
+              alt={blog.title} 
+              className="w-full h-auto max-h-[500px] object-cover"
+            />
+          </div>
+        )}
 
         {blog.excerpt && (
           <div className="text-xl text-gray-700 mb-8 italic">
@@ -99,8 +109,8 @@ export default function PostPage() {
 
         <footer className="mt-12 pt-8 border-t border-gray-200">
           <div className="flex justify-between items-center">
-            <a href="/" className="text-blue-500 hover:underline">← Back to Home</a>
-            <a href="/profile" className="text-blue-500 hover:underline">View Profile →</a>
+            <Link to="/" className="text-blue-500 hover:underline">← Back to Home</Link>
+            <Link to="/profile" className="text-blue-500 hover:underline">View Profile →</Link>
           </div>
         </footer>
       </article>

@@ -9,6 +9,5 @@ export default [
     route("profile", "routes/profile.tsx"),
     route("create", "routes/create.tsx"),
     route("post/:id", "routes/post.tsx"),
-    route("manage", "routes/manage.tsx"),
   ])
 ] satisfies RouteConfig;

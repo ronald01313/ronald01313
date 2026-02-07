@@ -11,7 +11,7 @@ export default function CreatePage() {
   };
 
   return (
-    <div style={{ maxWidth: "700px", margin: "40px auto" }} key={refreshKey}>
+    <div key={refreshKey}>
       <CreatePost onPostCreated={handlePostCreated} />
     </div>
   );

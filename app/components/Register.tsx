@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { signUp } from "../lib/supabase";
 
 export function Register() {
@@ -54,24 +55,30 @@ export function Register() {
   };
 
   return (
-    <div className="max-w-md mx-auto my-12 p-8 border border-gray-200 rounded-lg">
-      <h2 className="text-center mb-8 text-gray-800">Register</h2>
+    <div className="max-w-md mx-auto my-12 p-8 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-xl transition-all duration-300">
+      <div className="text-center mb-10">
+        <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200 mx-auto mb-4">
+          <img src="/rhd_blog.png" alt="RHD" className="w-10 h-10 object-contain" />
+        </div>
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Create Account</h2>
+        <p className="text-gray-500 dark:text-gray-400 mt-2">Join RHD Strategy to start writing</p>
+      </div>
 
       {error && (
-        <div className="p-3 mb-5 bg-red-50 text-red-700 rounded">
-          {error}
+        <div className="p-4 mb-6 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-xl text-sm font-medium border border-red-100 dark:border-red-900/30 flex items-center gap-2">
+          <span>⚠️</span> {error}
         </div>
       )}
 
       {success && (
-        <div className="p-3 mb-5 bg-green-50 text-green-700 rounded">
-          {success}
+        <div className="p-4 mb-6 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-xl text-sm font-medium border border-green-100 dark:border-green-900/30 flex items-center gap-2">
+          <span>✅</span> {success}
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
-        <div className="mb-5">
-          <label className="block mb-2 text-gray-800 font-medium">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
             Username
           </label>
           <input
@@ -79,27 +86,29 @@ export function Register() {
             name="username"
             value={formData.username}
             onChange={handleChange}
-            className="w-full p-3 border border-gray-300 rounded text-base box-border text-gray-800"
+            className="w-full p-4 bg-gray-50 dark:bg-gray-800 border border-transparent focus:border-blue-500 dark:focus:border-blue-500 rounded-xl text-gray-900 dark:text-white outline-none transition-all"
             placeholder="johndoe"
+            required
           />
         </div>
 
-        <div className="mb-5">
-          <label className="block mb-2 text-gray-800 font-medium">
-            Email
+        <div>
+          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
+            Email Address
           </label>
           <input
             type="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
-            className="w-full p-3 border border-gray-300 rounded text-base box-border text-gray-800"
+            className="w-full p-4 bg-gray-50 dark:bg-gray-800 border border-transparent focus:border-blue-500 dark:focus:border-blue-500 rounded-xl text-gray-900 dark:text-white outline-none transition-all"
             placeholder="your@email.com"
+            required
           />
         </div>
 
-        <div className="mb-5">
-          <label className="block mb-2 text-gray-800 font-medium">
+        <div>
+          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
             Password
           </label>
           <input
@@ -107,13 +116,14 @@ export function Register() {
             name="password"
             value={formData.password}
             onChange={handleChange}
-            className="w-full p-3 border border-gray-300 rounded text-base box-border text-gray-800"
+            className="w-full p-4 bg-gray-50 dark:bg-gray-800 border border-transparent focus:border-blue-500 dark:focus:border-blue-500 rounded-xl text-gray-900 dark:text-white outline-none transition-all"
             placeholder="••••••••"
+            required
           />
         </div>
 
-        <div className="mb-5">
-          <label className="block mb-2 text-gray-800 font-medium">
+        <div className="mb-6">
+          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
             Confirm Password
           </label>
           <input
@@ -121,23 +131,33 @@ export function Register() {
             name="confirmPassword"
             value={formData.confirmPassword}
             onChange={handleChange}
-            className="w-full p-3 border border-gray-300 rounded text-base box-border text-gray-800"
+            className="w-full p-4 bg-gray-50 dark:bg-gray-800 border border-transparent focus:border-blue-500 dark:focus:border-blue-500 rounded-xl text-gray-900 dark:text-white outline-none transition-all"
             placeholder="••••••••"
+            required
           />
         </div>
 
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full p-3 bg-purple-500 text-white border-none rounded text-base font-medium cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-400 mt-3 transition-all duration-300"
+          className={`w-full p-4 rounded-xl text-white font-bold text-lg shadow-lg transition-all duration-300 mt-4 ${
+            isLoading 
+              ? "bg-gray-400 cursor-not-allowed" 
+              : "bg-blue-600 hover:bg-blue-700 shadow-blue-200 dark:shadow-none"
+          }`}
         >
-          {isLoading ? "Registering..." : "Register"}
+          {isLoading ? "Creating account..." : "Create Account"}
         </button>
       </form>
 
-      <p className="text-center mt-5 text-gray-600">
-        Already have an account? <a href="/login" className="text-gray-800 no-underline font-medium">Login here</a>
-      </p>
+      <div className="text-center mt-8">
+        <p className="text-gray-600 dark:text-gray-400">
+          Already have an account?{" "}
+          <Link to="/login" className="text-blue-600 dark:text-blue-400 font-bold hover:underline transition-all">
+            Login here
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

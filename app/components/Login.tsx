@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { signIn } from "../lib/supabase";
 
 export function Login() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -13,7 +15,6 @@ export function Login() {
     setError("");
     setSuccess("");
 
-    // Basic validation
     if (!email || !password) {
       setError("Please fill in all fields");
       return;
@@ -27,9 +28,8 @@ export function Login() {
       setSuccess(result.message);
       setEmail("");
       setPassword("");
-      // Redirect to profile after successful login
       setTimeout(() => {
-        window.location.href = "/profile";
+        navigate("/profile");
       }, 1500);
     } else {
       setError(result.message);
@@ -37,88 +37,77 @@ export function Login() {
   };
 
   return (
-    <div style={{ maxWidth: "400px", margin: "50px auto", padding: "30px", border: "1px solid #e0e0e0", borderRadius: "8px" }}>
-      <h2 style={{ textAlign: "center", marginBottom: "30px", color: "#333" }}>Login</h2>
+    <div className="max-w-md mx-auto my-12 p-8 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-xl transition-all duration-300">
+      <div className="text-center mb-10">
+        <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200 mx-auto mb-4">
+          <img src="/rhd_blog.png" alt="RHD" className="w-10 h-10 object-contain" />
+        </div>
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Welcome Back</h2>
+        <p className="text-gray-500 dark:text-gray-400 mt-2">Enter your credentials to access your account</p>
+      </div>
 
       {error && (
-        <div style={{ padding: "10px", marginBottom: "20px", backgroundColor: "#fee", color: "#c00", borderRadius: "4px" }}>
-          {error}
+        <div className="p-4 mb-6 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-xl text-sm font-medium border border-red-100 dark:border-red-900/30 flex items-center gap-2">
+          <span>⚠️</span> {error}
         </div>
       )}
 
       {success && (
-        <div style={{ padding: "10px", marginBottom: "20px", backgroundColor: "#efe", color: "#060", borderRadius: "4px" }}>
-          {success}
+        <div className="p-4 mb-6 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-xl text-sm font-medium border border-green-100 dark:border-green-900/30 flex items-center gap-2">
+          <span>✅</span> {success}
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ display: "block", marginBottom: "5px", color: "#333", fontWeight: "500" }}>
-            Email
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
+            Email Address
           </label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              fontSize: "16px",
-              boxSizing: "border-box",
-              color: "#333",
-            }}
+            className="w-full p-4 bg-gray-50 dark:bg-gray-800 border border-transparent focus:border-blue-500 dark:focus:border-blue-500 rounded-xl text-gray-900 dark:text-white outline-none transition-all"
             placeholder="your@email.com"
+            required
           />
         </div>
 
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ display: "block", marginBottom: "5px", color: "#333", fontWeight: "500" }}>
+        <div>
+          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
             Password
           </label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              fontSize: "16px",
-              boxSizing: "border-box",
-              color: "#333",
-            }}
+            className="w-full p-4 bg-gray-50 dark:bg-gray-800 border border-transparent focus:border-blue-500 dark:focus:border-blue-500 rounded-xl text-gray-900 dark:text-white outline-none transition-all"
             placeholder="••••••••"
+            required
           />
         </div>
 
         <button
           type="submit"
           disabled={isLoading}
-          style={{
-            width: "100%",
-            padding: "12px",
-            backgroundColor: isLoading ? "#ccc" : "rgb(33, 150, 243)",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            fontSize: "16px",
-            fontWeight: "500",
-            cursor: isLoading ? "not-allowed" : "pointer",
-            marginTop: "10px",
-            transition: "all 0.3s ease",
-          }}
+          className={`w-full p-4 rounded-xl text-white font-bold text-lg shadow-lg transition-all duration-300 ${
+            isLoading 
+              ? "bg-gray-400 cursor-not-allowed" 
+              : "bg-blue-600 hover:bg-blue-700 shadow-blue-200 dark:shadow-none"
+          }`}
         >
-          {isLoading ? "Logging in..." : "Login"}
+          {isLoading ? "Signing in..." : "Sign In"}
         </button>
       </form>
 
-      <p style={{ textAlign: "center", marginTop: "20px", color: "#666" }}>
-        Don't have an account? <a href="/register" style={{ color: "#333", textDecoration: "none", fontWeight: "500" }}>Register here</a>
-      </p>
+      <div className="text-center mt-8">
+        <p className="text-gray-600 dark:text-gray-400">
+          Don't have an account?{" "}
+          <Link to="/register" className="text-blue-600 dark:text-blue-400 font-bold hover:underline transition-all">
+            Create an account
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

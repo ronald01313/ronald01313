@@ -134,7 +134,7 @@ export const getUserBlogs = async (userId: string): Promise<Blog[]> => {
   try {
     const { data, error } = await supabase
       .from("blogs")
-      .select("*")
+      .select("*, blog_images(*)")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
@@ -333,7 +333,11 @@ export const deleteBlogImage = async (imageId: number): Promise<boolean> => {
 };
 
 // Comment functions
-export const getComments = async (blogId: number | string): Promise<Comment[]> => {
+export interface ThreadedComment extends Comment {
+  replies?: ThreadedComment[];
+}
+
+export const getComments = async (blogId: number | string): Promise<ThreadedComment[]> => {
   const id = typeof blogId === 'string' ? parseInt(blogId) : blogId;
   if (isNaN(id) || id == null) {
     console.warn("Invalid blogId:", blogId);
@@ -345,8 +349,7 @@ export const getComments = async (blogId: number | string): Promise<Comment[]> =
       .from("comments")
       .select("*")
       .eq("blog_id", id)
-      .is("parent_comment_id", null)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: true });
 
     if (error) {
       console.error("Error fetching comments:", error.message || error);
@@ -360,11 +363,30 @@ export const getComments = async (blogId: number | string): Promise<Comment[]> =
         return {
           ...comment,
           profiles: profile ? { username: profile.username, avatar_url: profile.avatar_url } : null
-        };
+        } as ThreadedComment;
       })
     );
 
-    return commentsWithProfiles;
+    // Build threaded structure
+    const commentMap = new Map<number, ThreadedComment>();
+    const topLevelComments: ThreadedComment[] = [];
+
+    commentsWithProfiles.forEach(comment => {
+      commentMap.set(comment.id, { ...comment, replies: [] });
+    });
+
+    commentsWithProfiles.forEach(comment => {
+      if (comment.parent_comment_id) {
+        const parent = commentMap.get(comment.parent_comment_id);
+        if (parent) {
+          parent.replies!.push(commentMap.get(comment.id)!);
+        }
+      } else {
+        topLevelComments.push(commentMap.get(comment.id)!);
+      }
+    });
+
+    return topLevelComments;
   } catch (err) {
     console.error("Unexpected error fetching comments:", err);
     return [];
@@ -410,6 +432,27 @@ export const deleteComment = async (commentId: number): Promise<boolean> => {
   }
 };
 
+export const updateComment = async (commentId: number, content: string): Promise<Comment | null> => {
+  try {
+    const { data, error } = await supabase
+      .from("comments")
+      .update({ content, updated_at: new Date().toISOString() })
+      .eq("id", commentId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating comment:", error);
+      return null;
+    }
+
+    return data;
+  } catch (err) {
+    console.error("Unexpected error updating comment:", err);
+    return null;
+  }
+};
+
 // Register a new user with Supabase Auth
 export const signUp = async (email: string, password: string, username: string): Promise<{ success: boolean; message: string }> => {
   try {
@@ -438,7 +481,7 @@ export const signUp = async (email: string, password: string, username: string):
 // Login user with Supabase Auth
 export const signIn = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -528,4 +571,49 @@ export async function removeReaction(blogId: number, userId: string) {
     .eq("user_id", userId);
 
   if (error) throw error;
+}
+
+export async function fetchAllExtras(blogIds: number[]) {
+  if (blogIds.length === 0) return { comments: {}, reactions: {} };
+
+  try {
+    const [commentsResponse, reactionsResponse] = await Promise.all([
+      supabase
+        .from("comments")
+        .select("*")
+        .in("blog_id", blogIds)
+        .is("parent_comment_id", null),
+      supabase
+        .from("reactions")
+        .select("*")
+        .in("blog_id", blogIds)
+    ]);
+
+    const commentsMap: Record<string, any[]> = {};
+    const reactionsMap: Record<string, any[]> = {};
+
+    blogIds.forEach(id => {
+      commentsMap[id] = [];
+      reactionsMap[id] = [];
+    });
+
+    if (commentsResponse.data) {
+      commentsResponse.data.forEach(comment => {
+        if (!commentsMap[comment.blog_id]) commentsMap[comment.blog_id] = [];
+        commentsMap[comment.blog_id].push(comment);
+      });
+    }
+
+    if (reactionsResponse.data) {
+      reactionsResponse.data.forEach(reaction => {
+        if (!reactionsMap[reaction.blog_id]) reactionsMap[reaction.blog_id] = [];
+        reactionsMap[reaction.blog_id].push(reaction);
+      });
+    }
+
+    return { comments: commentsMap, reactions: reactionsMap };
+  } catch (err) {
+    console.error("Error fetching all extras:", err);
+    return { comments: {}, reactions: {} };
+  }
 }

@@ -1,12 +1,25 @@
 
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { createBlog, getCurrentUser, uploadAndSaveBlogImage, updateBlog, getBlogById, supabase} from "../lib/supabase";
 
 interface CreatePostProps {
   onPostCreated?: () => void;
 }
+
+const ToolbarButton = ({ onClick, title, icon }: { onClick: () => void, title: string, icon: ReactNode }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    title={title}
+    className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-all flex items-center justify-center"
+  >
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      {icon}
+    </svg>
+  </button>
+);
 
 export default function CreatePost({ onPostCreated }: CreatePostProps) {
   const [searchParams] = useSearchParams();
@@ -126,6 +139,24 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
         formatted = selected 
           ? `${before}## ${selected}${after}`
           : `${before}## Heading${after}`;
+        break;
+      case "list-ul":
+        formatted = selected 
+          ? `${before}\n- ${selected.replace(/\n/g, "\n- ")}${after}`
+          : `${before}\n- List item${after}`;
+        break;
+      case "list-ol":
+        formatted = selected 
+          ? `${before}\n1. ${selected.replace(/\n/g, "\n1. ")}${after}`
+          : `${before}\n1. List item${after}`;
+        break;
+      case "hr":
+        formatted = `${before}\n---\n${after}`;
+        break;
+      case "quote":
+        formatted = selected 
+          ? `${before}\n> ${selected.replace(/\n/g, "\n> ")}${after}`
+          : `${before}\n> Quote${after}`;
         break;
       default:
         return;
@@ -257,8 +288,8 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
           setSuccess(true);
           setTimeout(() => setSuccess(false), 3000);
 
-          // Navigate to home page with full reload to ensure fresh data
-          window.location.href = `/?t=${Date.now()}`;
+          // Navigate to profile page with success notification
+          navigate("/profile?edited=true");
 
           // Notify parent to refresh posts
           if (onPostCreated) {
@@ -303,9 +334,6 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
           // Navigate to the newly created post
           navigate(`/post/${result.id}`);
 
-          // Navigate to the newly created post
-          navigate(`/post/${result.id}`);
-
           // Reset form
           setFormData({
             title: "",
@@ -344,277 +372,214 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
   }
 
   return (
-    <div className="max-w-2xl mx-auto my-10 p-8 border border-gray-200 rounded-lg">
+    <div className="max-w-4xl mx-auto my-12 p-8 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-xl transition-all duration-300">
+      <div className="text-center mb-10">
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">{isEditing ? "Edit Your Story" : "Create New Story"}</h2>
+        <p className="text-gray-500 dark:text-gray-400 mt-2">Share your thoughts and insights with the world</p>
+      </div>
+
       {success && (
-        <div className="p-3 mb-5 bg-green-50 text-green-800 rounded">
-          {isEditing ? "Post updated successfully" : "Create Post successfully"}
+        <div className="p-4 mb-6 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-xl text-sm font-medium border border-green-100 dark:border-green-900/30 flex items-center gap-2">
+          <span>✅</span> {isEditing ? "Post updated successfully" : "Post created successfully"}
         </div>
       )}
-
-      <h2 className="mb-8 text-gray-800">{isEditing ? "Edit Post" : "Create New Post"}</h2>
 
       {error && (
-        <div className="p-3 mb-5 bg-red-50 text-red-700 rounded">
-          {error}
+        <div className="p-4 mb-6 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-xl text-sm font-medium border border-red-100 dark:border-red-900/30 flex items-center gap-2">
+          <span>⚠️</span> {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
-        <div className="mb-5">
-          <label className="block mb-2 text-gray-800 font-medium">
-            Post Title
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
+              Post Title
+            </label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              disabled={loading || !userId}
+              className="w-full p-4 bg-gray-50 dark:bg-gray-800 border border-transparent focus:border-blue-500 dark:focus:border-blue-500 rounded-xl text-gray-900 dark:text-white outline-none transition-all disabled:opacity-50"
+              placeholder="Enter post title"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
+              Category
+            </label>
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              disabled={loading || !userId}
+              className="w-full p-4 bg-gray-50 dark:bg-gray-800 border border-transparent focus:border-blue-500 dark:focus:border-blue-500 rounded-xl text-gray-900 dark:text-white outline-none transition-all disabled:opacity-50 appearance-none cursor-pointer"
+              required
+            >
+              <option value="">Select a category</option>
+              <option value="Technology">Technology</option>
+              <option value="Lifestyle">Lifestyle</option>
+              <option value="Travel">Travel</option>
+              <option value="Food">Food</option>
+              <option value="Business">Business</option>
+              <option value="Health">Health</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
+            Short Excerpt
           </label>
           <input
             type="text"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
-            disabled={loading || !userId}
-            className="w-full p-3 border border-gray-300 rounded text-base box-border text-gray-800 disabled:opacity-60"
-            placeholder="Enter post title"
-          />
-        </div>
-
-        <div className="mb-5">
-          <label className="block mb-2 text-gray-800 font-medium">
-            Category
-          </label>
-          <select
-            name="category"
-            value={formData.category}
-            onChange={handleChange}
-            disabled={loading || !userId}
-            className="w-full p-3 border border-gray-300 rounded text-base box-border text-gray-800 disabled:opacity-60"
-          >
-            <option value="">Select a category</option>
-            <option value="React">React</option>
-            <option value="Web Dev">Web Dev</option>
-            <option value="Performance">Performance</option>
-            <option value="JavaScript">JavaScript</option>
-            <option value="TypeScript">TypeScript</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-
-        <div className="mb-5">
-          <label className="block mb-2 text-gray-800 font-medium">
-            Excerpt
-          </label>
-          <textarea
             name="excerpt"
             value={formData.excerpt}
             onChange={handleChange}
             disabled={loading || !userId}
-            className="w-full p-3 border border-gray-300 rounded text-base box-border min-h-20 font-inherit text-gray-800 disabled:opacity-60"
-            placeholder="Brief summary of your post"
+            className="w-full p-4 bg-gray-50 dark:bg-gray-800 border border-transparent focus:border-blue-500 dark:focus:border-blue-500 rounded-xl text-gray-900 dark:text-white outline-none transition-all disabled:opacity-50"
+            placeholder="A brief summary of your post..."
           />
         </div>
 
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ display: "block", marginBottom: "5px", color: "#333", fontWeight: "500" }}>
+        <div>
+          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
             Content
           </label>
           
-          {/* Text Formatting Toolbar */}
-          <div style={{
-            display: "flex",
-            gap: "5px",
-            marginBottom: "10px",
-            padding: "10px",
-            backgroundColor: "#e3f2fd",
-            borderRadius: "4px",
-            flexWrap: "wrap",
-            border: "2px solid #2196F3",
-          }}>
-            <button
-              type="button"
-              onClick={() => applyTextFormat("bold")}
-              disabled={loading || !userId}
-              title="Bold (use **text**)"
-              style={{
-                padding: "6px 12px",
-                backgroundColor: "#FF6B6B",
-                border: "none",
-                borderRadius: "4px",
-                cursor: loading || !userId ? "not-allowed" : "pointer",
-                fontWeight: "bold",
-                fontSize: "14px",
-                color: "white",
-                transition: "all 0.2s",
-                opacity: loading || !userId ? 0.5 : 1,
-              }}
-            >
-              <strong>B</strong>
-            </button>
-            <button
-              type="button"
-              onClick={() => applyTextFormat("italic")}
-              disabled={loading || !userId}
-              title="Italic (use _text_)"
-              style={{
-                padding: "6px 12px",
-                backgroundColor: "#4ECDC4",
-                border: "none",
-                borderRadius: "4px",
-                cursor: loading || !userId ? "not-allowed" : "pointer",
-                fontStyle: "italic",
-                fontSize: "14px",
-                color: "white",
-                transition: "all 0.2s",
-                opacity: loading || !userId ? 0.5 : 1,
-              }}
-            >
-              I
-            </button>
-            <button
-              type="button"
-              onClick={() => applyTextFormat("code")}
-              disabled={loading || !userId}
-              title="Code (use `code`)"
-              style={{
-                padding: "6px 12px",
-                backgroundColor: "#95E1D3",
-                border: "none",
-                borderRadius: "4px",
-                cursor: loading || !userId ? "not-allowed" : "pointer",
-                fontFamily: "monospace",
-                fontSize: "12px",
-                color: "#333",
-                transition: "all 0.2s",
-                opacity: loading || !userId ? 0.5 : 1,
-              }}
-            >
-              &lt;/&gt;
-            </button>
-            <button
-              type="button"
-              onClick={() => applyTextFormat("heading")}
-              disabled={loading || !userId}
-              title="Heading (use ##)"
-              style={{
-                padding: "6px 12px",
-                backgroundColor: "#FFD93D",
-                border: "none",
-                borderRadius: "4px",
-                cursor: loading || !userId ? "not-allowed" : "pointer",
-                fontWeight: "bold",
-                fontSize: "16px",
-                color: "#333",
-                transition: "all 0.2s",
-                opacity: loading || !userId ? 0.5 : 1,
-              }}
-            >
-              H
-            </button>
-            <button
-              type="button"
-              onClick={() => applyTextFormat("link")}
-              disabled={loading || !userId}
-              title="Link (use [text](url))"
-              style={{
-                padding: "6px 12px",
-                backgroundColor: "#6BCB77",
-                border: "none",
-                borderRadius: "4px",
-                cursor: loading || !userId ? "not-allowed" : "pointer",
-                color: "white",
-                fontSize: "14px",
-                transition: "all 0.2s",
-                opacity: loading || !userId ? 0.5 : 1,
-              }}
-            >
-              🔗
-            </button>
-          </div>
+          <div className="border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 transition-all">
+            {/* Professional Toolbar */}
+            <div className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-2 flex flex-wrap gap-1 items-center">
+              {/* Text Style Group */}
+              <div className="flex items-center gap-0.5 pr-2 border-r border-gray-300 dark:border-gray-600 mr-2">
+                <ToolbarButton 
+                  onClick={() => applyTextFormat("bold")} 
+                  title="Bold (Ctrl+B)"
+                  icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z" />}
+                />
+                <ToolbarButton 
+                  onClick={() => applyTextFormat("italic")} 
+                  title="Italic (Ctrl+I)"
+                  icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m-4 0h4m-6 16h4" />}
+                />
+                <ToolbarButton 
+                  onClick={() => applyTextFormat("quote")} 
+                  title="Quote"
+                  icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />}
+                />
+              </div>
 
-          <textarea
-            name="content"
-            value={formData.content}
-            onChange={handleChange}
-            disabled={loading || !userId}
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              fontSize: "16px",
-              boxSizing: "border-box",
-              minHeight: "250px",
-              fontFamily: "inherit",
-              color: "#333",
-              opacity: loading || !userId ? 0.6 : 1,
-            }}
-            placeholder="Write your post content here... (Supports markdown formatting)"
-          />
-        </div>
+              {/* Formatting Group */}
+              <div className="flex items-center gap-0.5 pr-2 border-r border-gray-300 dark:border-gray-600 mr-2">
+                <ToolbarButton 
+                  onClick={() => applyTextFormat("heading")} 
+                  title="Heading"
+                  icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />}
+                />
+                <ToolbarButton 
+                  onClick={() => applyTextFormat("list-ul")} 
+                  title="Bullet List"
+                  icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16M4 6h.01M4 12h.01M4 18h.01" />}
+                />
+                <ToolbarButton 
+                  onClick={() => applyTextFormat("list-ol")} 
+                  title="Numbered List"
+                  icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 6h13M7 12h13M7 18h13M3 6h.01M3 12h.01M3 18h.01" />}
+                />
+              </div>
 
-        {/* Image Upload Section */}
-        <div className="mb-5 p-4 bg-blue-50 rounded-lg border-2 border-teal-400">
-          <label className="block mb-3 text-gray-800 font-semibold text-base">
-            📷 Upload Images
-          </label>
-
-          {/* File Input Wrapper with Styled Button */}
-          <div className="relative inline-block w-full">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              disabled={loading || !userId || imageLoading}
-              className="absolute opacity-0 w-full h-full cursor-pointer disabled:cursor-not-allowed"
-            />
-            <button
-              type="button"
-              disabled={loading || !userId || imageLoading}
-              className="w-full p-3 bg-teal-400 border-2 border-teal-400 rounded cursor-pointer text-white font-semibold text-sm transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60"
-              onClick={(e) => {
-                const input = (e.currentTarget.parentElement?.querySelector('input[type="file"]') as HTMLInputElement);
-                input?.click();
-              }}
-            >
-              {imageLoading ? "⏳ Uploading..." : "📁 Choose Image File"}
-            </button>
-          </div>
-
-          {imageUploadSuccess && (
-            <div className="p-3 mb-3 bg-green-50 text-green-700 rounded">
-              Image uploaded successfully!
-            </div>
-          )}
-
-          <p className="text-xs text-gray-600 mt-2 font-medium">
-            ✅ Upload PNG, JPG, GIF, or WebP
-          </p>
-
-          {/* Image Previews */}
-          {uploadedImages.length > 0 && (
-            <div className="mt-4 p-3 bg-white rounded border border-gray-300">
-              <h4 className="text-teal-400 mb-3 text-sm">✓ Uploaded Images ({uploadedImages.length}):</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {uploadedImages.map((img, idx) => (
-                  <div key={idx} className="relative shadow-md">
-                    <img
-                      src={img.url}
-                      alt={img.file}
-                      className="w-full h-24 object-cover rounded border-2 border-teal-400"
-                    />
-                    <p className="text-xs text-gray-600 mt-1 text-center break-words">
-                      {img.file}
-                    </p>
-                  </div>
-                ))}
+              {/* Insert Group */}
+              <div className="flex items-center gap-0.5">
+                <ToolbarButton 
+                  onClick={() => applyTextFormat("link")} 
+                  title="Insert Link"
+                  icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />}
+                />
+                <ToolbarButton 
+                  onClick={() => applyTextFormat("code")} 
+                  title="Code Block"
+                  icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />}
+                />
+                <ToolbarButton 
+                  onClick={() => applyTextFormat("hr")} 
+                  title="Horizontal Rule"
+                  icon={<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12h16" />}
+                />
               </div>
             </div>
+
+            <textarea
+              name="content"
+              value={formData.content}
+              onChange={handleChange}
+              disabled={loading || !userId}
+              className="w-full p-6 bg-white dark:bg-gray-900 border-none outline-none disabled:opacity-50 min-h-[400px] resize-vertical font-mono text-sm leading-relaxed text-gray-900 dark:text-gray-100"
+              placeholder="Start writing your masterpiece... (Markdown supported)"
+              required
+            />
+          </div>
+        </div>
+
+        <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
+          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-4 uppercase tracking-wider">
+            Images
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            disabled={loading || !userId || imageLoading}
+            className="block w-full text-sm text-gray-500 dark:text-gray-400
+              file:mr-4 file:py-2.5 file:px-4
+              file:rounded-xl file:border-0
+              file:text-sm file:font-bold
+              file:bg-blue-50 file:text-blue-700
+              hover:file:bg-blue-100 transition-all"
+          />
+          
+          {uploadedImages.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
+              {uploadedImages.map((img, idx) => (
+                <div key={idx} className="relative group rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800">
+                  <img src={img.url} alt="Preview" className="w-full h-24 object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setUploadedImages(prev => prev.filter((_, i) => i !== idx))}
+                    className="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-md"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
-        <button
-          type="submit"
-          disabled={loading || !userId}
-          className="w-full p-3 bg-green-500 text-white border-none rounded text-base font-medium cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-400 mt-3 transition-all duration-300"
-        >
-          {!userId ? "Please log in to create posts" : loading ? "Creating..." : "Create Post"}
-        </button>
+        <div className="flex justify-end gap-4 pt-4">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="px-8 py-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading || !userId}
+            className={`px-12 py-4 rounded-xl text-white font-bold text-lg shadow-lg transition-all duration-300 ${
+              loading 
+                ? "bg-gray-400 cursor-not-allowed" 
+                : "bg-blue-600 hover:bg-blue-700 shadow-blue-200 dark:shadow-none"
+            }`}
+          >
+            {loading ? "Saving..." : isEditing ? "Update Post" : "Publish Post"}
+          </button>
+        </div>
       </form>
     </div>
   );

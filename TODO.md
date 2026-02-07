@@ -1,8 +1,9 @@
-# TODO: Implement Real-time Comment Display
+# TODO: Implement Facebook-like Threaded Comments
 
-- [x] Remove modal close after posting comment in PostModal.tsx to keep the modal open and display comments in real time
+## Steps to Complete
 
-# TODO: Implement Post Editing Redirect
-
-- [x] Modify CreatePost.tsx to redirect to profile page with success notification after editing a post
-- [x] Update profile.tsx to display success notification when edited=true query parameter is present
+- [x] Update `getComments` in `supabase.ts` to fetch all comments (including replies) and structure them into a threaded format.
+- [x] Modify `Comments.tsx` to render comments recursively, showing replies indented under parent comments.
+- [x] Add reply functionality: a "Reply" button that opens an input field for replying to a specific comment.
+- [x] Update `addComment` to handle `parent_comment_id` when adding replies.
+- [x] Test the threaded comment system to ensure replies are properly nested and displayed.
