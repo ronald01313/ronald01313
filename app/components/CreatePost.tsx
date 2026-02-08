@@ -1,7 +1,7 @@
 
 
 import { useState, useEffect, type ReactNode } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router";
 import { createBlog, getCurrentUser, uploadAndSaveBlogImage, updateBlog, getBlogById, supabase} from "../lib/supabase";
 
 interface CreatePostProps {
@@ -13,7 +13,7 @@ const ToolbarButton = ({ onClick, title, icon }: { onClick: () => void, title: s
     type="button"
     onClick={onClick}
     title={title}
-    className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-all flex items-center justify-center"
+    className="p-2.5 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-all flex items-center justify-center border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 shadow-sm"
   >
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       {icon}
@@ -365,36 +365,39 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
 
   if (userLoading) {
     return (
-      <div className="max-w-2xl mx-auto my-10 p-8 border border-gray-200 rounded-lg text-center">
-        <p>Loading...</p>
+      <div className="max-w-2xl mx-auto my-12 p-12 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl text-center shadow-xl transition-all duration-500">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-widest text-xs">Loading...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto my-12 p-8 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-xl transition-all duration-300">
+    <div className="max-w-4xl mx-auto my-12 p-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-xl transition-all duration-500">
       <div className="text-center mb-10">
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">{isEditing ? "Edit Your Story" : "Create New Story"}</h2>
-        <p className="text-gray-500 dark:text-gray-400 mt-2">Share your thoughts and insights with the world</p>
+        <h2 className="text-4xl font-black text-zinc-900 dark:text-white tracking-tighter uppercase">{isEditing ? "Edit Story" : "New Story"}</h2>
+        <p className="text-zinc-500 dark:text-zinc-400 mt-2 font-medium">Share your unique insights with the community</p>
       </div>
 
       {success && (
-        <div className="p-4 mb-6 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-xl text-sm font-medium border border-green-100 dark:border-green-900/30 flex items-center gap-2">
-          <span>✅</span> {isEditing ? "Post updated successfully" : "Post created successfully"}
+        <div className="p-5 mb-8 bg-green-50/50 dark:bg-green-900/10 text-green-700 dark:text-green-400 rounded-2xl text-sm font-bold border border-green-100 dark:border-green-900/30 flex items-center gap-3 shadow-sm transition-all duration-500">
+          <span className="text-lg">✅</span> {isEditing ? "Story updated successfully" : "Story created successfully"}
         </div>
       )}
 
       {error && (
-        <div className="p-4 mb-6 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-xl text-sm font-medium border border-red-100 dark:border-red-900/30 flex items-center gap-2">
-          <span>⚠️</span> {error}
+        <div className="p-5 mb-8 bg-red-50/50 dark:bg-red-900/10 text-red-700 dark:text-red-400 rounded-2xl text-sm font-bold border border-red-100 dark:border-red-900/30 flex items-center gap-3 shadow-sm transition-all duration-500">
+          <span className="text-lg">⚠️</span> {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
-              Post Title
+      <form onSubmit={handleSubmit} className="space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-2">
+            <label className="block text-xs font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest ml-1">
+              Title
             </label>
             <input
               type="text"
@@ -402,14 +405,14 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
               value={formData.title}
               onChange={handleChange}
               disabled={loading || !userId}
-              className="w-full p-4 bg-gray-50 dark:bg-gray-800 border border-transparent focus:border-blue-500 dark:focus:border-blue-500 rounded-xl text-gray-900 dark:text-white outline-none transition-all disabled:opacity-50"
-              placeholder="Enter post title"
+              className="w-full p-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium shadow-inner disabled:opacity-50"
+              placeholder="Give your story a title..."
               required
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
+          <div className="space-y-2">
+            <label className="block text-xs font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest ml-1">
               Category
             </label>
             <select
@@ -417,10 +420,10 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
               value={formData.category}
               onChange={handleChange}
               disabled={loading || !userId}
-              className="w-full p-4 bg-gray-50 dark:bg-gray-800 border border-transparent focus:border-blue-500 dark:focus:border-blue-500 rounded-xl text-gray-900 dark:text-white outline-none transition-all disabled:opacity-50 appearance-none cursor-pointer"
+              className="w-full p-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium shadow-inner disabled:opacity-50 appearance-none cursor-pointer"
               required
             >
-              <option value="">Select a category</option>
+              <option value="">Select Category</option>
               <option value="Technology">Technology</option>
               <option value="Lifestyle">Lifestyle</option>
               <option value="Travel">Travel</option>
@@ -432,9 +435,9 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
-            Short Excerpt
+        <div className="space-y-2">
+          <label className="block text-xs font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest ml-1">
+            Summary
           </label>
           <input
             type="text"
@@ -442,7 +445,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
             value={formData.excerpt}
             onChange={handleChange}
             disabled={loading || !userId}
-            className="w-full p-4 bg-gray-50 dark:bg-gray-800 border border-transparent focus:border-blue-500 dark:focus:border-blue-500 rounded-xl text-gray-900 dark:text-white outline-none transition-all disabled:opacity-50"
+            className="w-full p-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-medium shadow-inner disabled:opacity-50"
             placeholder="A brief summary of your post..."
           />
         </div>
@@ -560,24 +563,24 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
           )}
         </div>
 
-        <div className="flex justify-end gap-4 pt-4">
+        <div className="flex justify-end gap-6 pt-8">
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="px-8 py-4 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+            className="px-10 py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-xl font-black uppercase tracking-widest hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all text-xs border border-zinc-200 dark:border-zinc-700 shadow-sm"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading || !userId}
-            className={`px-12 py-4 rounded-xl text-white font-bold text-lg shadow-lg transition-all duration-300 ${
+            className={`px-14 py-4 rounded-xl text-white font-black uppercase tracking-widest text-xs shadow-xl transition-all duration-500 ${
               loading 
-                ? "bg-gray-400 cursor-not-allowed" 
-                : "bg-blue-600 hover:bg-blue-700 shadow-blue-200 dark:shadow-none"
+              ? "bg-zinc-300 dark:bg-zinc-800 cursor-not-allowed text-zinc-500"
+                : "bg-blue-600 hover:bg-blue-700 shadow-blue-500/20"
             }`}
           >
-            {loading ? "Saving..." : isEditing ? "Update Post" : "Publish Post"}
+            {loading ? "Saving..." : isEditing ? "Update Story" : "Publish Story"}
           </button>
         </div>
       </form>

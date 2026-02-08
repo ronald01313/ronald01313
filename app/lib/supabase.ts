@@ -581,8 +581,7 @@ export async function fetchAllExtras(blogIds: number[]) {
       supabase
         .from("comments")
         .select("*")
-        .in("blog_id", blogIds)
-        .is("parent_comment_id", null),
+        .in("blog_id", blogIds),
       supabase
         .from("reactions")
         .select("*")

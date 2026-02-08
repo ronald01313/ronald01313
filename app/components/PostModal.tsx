@@ -111,7 +111,7 @@ export default function PostModal({ blog, comments, reactions, userId, isOpen, o
           </div>
 
           {/* Comments Section */}
-          <div className="border-t border-gray-100 dark:border-gray-800 pt-10">
+          <div className="border-t border-blue-200 dark:border-gray-800 pt-10">
             <div className="flex items-center gap-3 mb-8">
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Discussion</h3>
               <span className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-full text-sm font-bold">{localComments.length}</span>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router";
 import { signIn } from "../lib/supabase";
 
 export function Login() {
@@ -93,7 +93,7 @@ export function Login() {
           className={`w-full p-4 rounded-xl text-white font-bold text-lg shadow-lg transition-all duration-300 ${
             isLoading 
               ? "bg-gray-400 cursor-not-allowed" 
-              : "bg-blue-600 hover:bg-blue-700 shadow-blue-200 dark:shadow-none"
+              : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-200/50 dark:shadow-none"
           }`}
         >
           {isLoading ? "Signing in..." : "Sign In"}

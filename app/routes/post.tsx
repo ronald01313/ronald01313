@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link } from "react-router";
 import { getBlogById, type Blog } from "../lib/supabase";
 import Header from "../components/Header";
 

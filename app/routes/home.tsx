@@ -146,7 +146,7 @@ export default function Home() {
             <input
               type="text"
               placeholder="Search posts..."
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all shadow-sm"
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-blue-300 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-400 outline-none transition-all shadow-lg shadow-blue-100/50"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -181,8 +181,8 @@ export default function Home() {
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center gap-2">
                   <span className="text-yellow-500">⭐</span> Featured Post
                 </h2>
-                <div 
-                  className="group relative overflow-hidden rounded-3xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer"
+                <div
+                  className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-white to-blue-50 dark:bg-gray-900 border border-blue-200 dark:border-gray-800 shadow-lg hover:shadow-2xl hover:shadow-blue-200/50 transition-all duration-500 cursor-pointer"
                   onClick={() => handlePostClick(featuredPost)}
                 >
                   <div className="flex flex-col lg:flex-row">
@@ -249,13 +249,13 @@ export default function Home() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-20 bg-white dark:bg-gray-900 rounded-3xl border border-dashed border-gray-200 dark:border-gray-800">
+                <div className="text-center py-20 bg-gradient-to-br from-white to-blue-50 dark:bg-slate-900 rounded-3xl border border-dashed border-blue-200 dark:border-slate-800 shadow-lg">
                   <span className="text-5xl mb-4 block">🏜️</span>
                   <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">No posts found</h3>
-                  <p className="text-gray-500 dark:text-gray-400">Try adjusting your search or category filters.</p>
-                  <button 
+                  <p className="text-gray-600 dark:text-gray-400">Try adjusting your search or category filters.</p>
+                  <button
                     onClick={() => {setSearchTerm(""); setSelectedCategory("All");}}
-                    className="mt-6 text-blue-600 dark:text-blue-400 font-semibold hover:underline"
+                    className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200/50"
                   >
                     Clear all filters
                   </button>

@@ -80,22 +80,22 @@ export default function Comments({ blogId, userId, comments, onCommentUpdate }: 
     return (
       <div key={comment.id} className={`${depth > 0 ? 'ml-8 mt-4' : 'mt-6'}`}>
         <div
-          className={`p-6 rounded-2xl border transition-all duration-200 ${
+          className={`p-6 rounded-2xl border transition-all duration-300 ${
             comment.user_id === userId
-              ? "bg-blue-50/50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30"
-              : "bg-gray-50 dark:bg-gray-800/30 border-transparent hover:border-gray-200 dark:hover:border-gray-700"
+              ? "bg-blue-50/30 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30"
+              : "bg-zinc-50 dark:bg-zinc-800/50 border-zinc-100 dark:border-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700"
           }`}
         >
           <div className="flex justify-between items-start mb-3">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-xs">
+              <div className="w-10 h-10 rounded-xl bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-zinc-700 dark:text-zinc-300 font-black text-sm border border-zinc-300 dark:border-zinc-600 shadow-sm">
                 {comment.profiles?.username?.[0]?.toUpperCase() || "A"}
               </div>
               <div>
-                <strong className="block text-sm font-bold text-gray-900 dark:text-gray-200">
+                <strong className="block text-sm font-black text-zinc-900 dark:text-white uppercase tracking-tighter">
                   {comment.profiles?.username || "Anonymous"}
                 </strong>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-500 uppercase tracking-widest">
                   {new Date(comment.created_at).toLocaleDateString()}
                   {comment.updated_at !== comment.created_at && " • Edited"}
                 </span>
@@ -103,16 +103,16 @@ export default function Comments({ blogId, userId, comments, onCommentUpdate }: 
             </div>
 
             {comment.user_id === userId && !editingId && (
-              <div className="flex gap-3">
+              <div className="flex gap-4">
                 <button
                   onClick={() => startEditing(comment)}
-                  className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline transition-all"
+                  className="text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-all"
                 >
                   Edit
                 </button>
                 <button
                   onClick={() => handleDelete(comment.id)}
-                  className="text-xs font-bold text-red-500 hover:underline transition-all"
+                  className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:text-red-600 transition-all"
                 >
                   Delete
                 </button>
@@ -125,19 +125,19 @@ export default function Comments({ blogId, userId, comments, onCommentUpdate }: 
               <textarea
                 value={editText}
                 onChange={(e) => setEditText(e.target.value)}
-                className="w-full p-4 bg-white dark:bg-gray-900 border border-blue-200 dark:border-blue-900/50 rounded-xl resize-vertical min-h-[80px] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm"
+                className="w-full p-4 bg-white dark:bg-zinc-900 border border-blue-200 dark:border-blue-900/50 rounded-xl resize-vertical min-h-[100px] text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm font-medium"
               />
-              <div className="flex gap-2 mt-3">
+              <div className="flex gap-2 mt-4">
                 <button
                   onClick={() => handleUpdate(comment.id)}
                   disabled={isSubmitting || !editText.trim()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-all shadow-sm disabled:opacity-50"
+                  className="px-6 py-2.5 bg-blue-600 text-white rounded-lg text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md disabled:opacity-50"
                 >
-                  Save Changes
+                  Save
                 </button>
                 <button
                   onClick={() => setEditingId(null)}
-                  className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-xs font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+                  className="px-6 py-2.5 bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-lg text-xs font-black uppercase tracking-widest hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-all"
                 >
                   Cancel
                 </button>
@@ -145,14 +145,14 @@ export default function Comments({ blogId, userId, comments, onCommentUpdate }: 
             </div>
           ) : (
             <>
-              <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm whitespace-pre-wrap">
+              <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-sm whitespace-pre-wrap font-medium">
                 {comment.content}
               </p>
               {depth < maxDepth && userId && (
-                <div className="mt-3">
+                <div className="mt-4">
                   <button
                     onClick={() => setReplyingTo(isReplying ? null : comment.id)}
-                    className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline transition-all"
+                    className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all"
                   >
                     {isReplying ? 'Cancel Reply' : 'Reply'}
                   </button>
@@ -169,13 +169,13 @@ export default function Comments({ blogId, userId, comments, onCommentUpdate }: 
               value={replyText}
               onChange={(e) => setReplyText(e.target.value)}
               disabled={isSubmitting}
-              className="w-full p-4 bg-white dark:bg-gray-900 border border-blue-200 dark:border-blue-900/50 rounded-xl resize-vertical min-h-[80px] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm"
+              className="w-full p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl resize-vertical min-h-[100px] text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm font-medium"
             />
-            <div className="flex gap-2 mt-3">
+            <div className="flex gap-2 mt-4">
               <button
                 onClick={() => handleAddReply(comment.id)}
                 disabled={!replyText.trim() || isSubmitting}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-all shadow-sm disabled:opacity-50"
+                className="px-6 py-2.5 bg-blue-600 text-white rounded-lg text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20 disabled:opacity-50"
               >
                 Reply
               </button>
@@ -184,7 +184,7 @@ export default function Comments({ blogId, userId, comments, onCommentUpdate }: 
                   setReplyingTo(null);
                   setReplyText("");
                 }}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-xs font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+                className="px-6 py-2.5 bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-lg text-xs font-black uppercase tracking-widest hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-all"
               >
                 Cancel
               </button>
@@ -204,37 +204,37 @@ export default function Comments({ blogId, userId, comments, onCommentUpdate }: 
         {comments?.length > 0 ? (
           comments.map((c) => renderComment(c))
         ) : (
-          <div className="text-center py-10 bg-gray-50 dark:bg-gray-800/20 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800">
-            <p className="text-gray-500 dark:text-gray-400 italic text-sm">No comments yet. Be the first to join the conversation!</p>
+          <div className="text-center py-16 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-800 transition-all duration-500">
+            <p className="text-zinc-500 dark:text-zinc-500 font-bold uppercase tracking-widest text-xs">No comments yet. Be the first to join the conversation!</p>
           </div>
         )}
       </div>
 
       {/* Add Comment Input */}
       {userId ? (
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm mt-8">
-          <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Share your thoughts</h4>
+        <div className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm mt-12 transition-all duration-500">
+          <h4 className="text-xl font-black text-zinc-900 dark:text-white mb-6 uppercase tracking-tighter">Share your thoughts</h4>
           <textarea
             placeholder="What are your thoughts on this post?"
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
             disabled={isSubmitting}
-            className="w-full p-4 bg-gray-50 dark:bg-gray-800 border-none rounded-xl resize-vertical min-h-[120px] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none transition-all disabled:opacity-50 text-sm"
+            className="w-full p-5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-700 rounded-2xl resize-vertical min-h-[150px] text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 outline-none transition-all disabled:opacity-50 text-sm font-medium shadow-inner"
           />
-          <div className="flex justify-end mt-4">
-            <button
-              onClick={handleAddComment}
-              disabled={!commentText.trim() || isSubmitting}
-              className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-800 disabled:cursor-not-allowed transition-all shadow-md text-sm"
-            >
-              {isSubmitting ? "Posting..." : "Post Comment"}
-            </button>
+          <div className="flex justify-end mt-6">
+          <button
+            onClick={handleAddComment}
+            disabled={!commentText.trim() || isSubmitting}
+            className="px-10 py-4 bg-blue-600 text-white rounded-xl font-black uppercase tracking-widest hover:bg-blue-700 disabled:bg-zinc-200 dark:disabled:bg-zinc-800 disabled:text-zinc-400 disabled:cursor-not-allowed transition-all shadow-xl shadow-blue-500/20 text-xs"
+          >
+            {isSubmitting ? "Posting..." : "Post Comment"}
+          </button>
           </div>
         </div>
       ) : (
-        <div className="text-center p-8 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/30">
-          <p className="text-gray-600 dark:text-gray-400 text-sm">
-            Please <Link to="/login" className="text-blue-600 dark:text-blue-400 font-bold hover:underline">login</Link> to participate in the discussion.
+        <div className="text-center p-10 bg-blue-50/50 dark:bg-blue-900/10 rounded-3xl border border-blue-100 dark:border-blue-900/30 transition-all duration-500">
+          <p className="text-zinc-600 dark:text-zinc-400 text-sm font-bold">
+            Please <Link to="/login" className="text-blue-600 dark:text-blue-400 font-black hover:underline transition-all">login</Link> to participate in the discussion.
           </p>
         </div>
       )}
