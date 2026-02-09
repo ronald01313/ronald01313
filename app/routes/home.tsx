@@ -182,7 +182,7 @@ export default function Home() {
                   <span className="text-yellow-500">⭐</span> Featured Post
                 </h2>
                 <div
-                  className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-white to-blue-50 dark:bg-gray-900 border border-blue-200 dark:border-gray-800 shadow-lg hover:shadow-2xl hover:shadow-blue-200/50 transition-all duration-500 cursor-pointer"
+                  className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-white to-blue-50 dark:from-gray-900 dark:to-gray-800 border border-blue-200 dark:border-gray-800 shadow-lg hover:shadow-2xl hover:shadow-blue-200/50 dark:hover:shadow-blue-900/30 transition-all duration-500 cursor-pointer"
                   onClick={() => handlePostClick(featuredPost)}
                 >
                   <div className="flex flex-col lg:flex-row">
@@ -199,16 +199,16 @@ export default function Home() {
                       <span className="inline-block px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-wider mb-4 w-fit mx-auto lg:mx-0">
                         {featuredPost.category || "Featured"}
                       </span>
-                      <h3 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4 group-hover:text-blue-600 transition-colors">
+                      <h3 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                         {featuredPost.title}
                       </h3>
-                      <p className="text-gray-600 dark:text-gray-400 text-lg mb-6 line-clamp-3">
+                      <p className="text-gray-600 dark:text-gray-400 text-lg mb-6 line-clamp-3 leading-relaxed">
                         {featuredPost.excerpt}
                       </p>
-                      <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mt-auto justify-center lg:justify-start">
+                      <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-500 mt-auto justify-center lg:justify-start">
                         <span className="font-semibold text-gray-900 dark:text-gray-200">By {featuredPost.profiles?.username}</span>
-                        <span>•</span>
-                        <span>{new Date(featuredPost.created_at).toLocaleDateString()}</span>
+                        <span className="text-gray-300 dark:text-gray-700">•</span>
+                        <span className="dark:text-gray-400">{new Date(featuredPost.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>

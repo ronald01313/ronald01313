@@ -217,15 +217,35 @@ export default function Profile() {
                             }`}>
                               {blog.published ? "Published" : "Draft"}
                             </span>
+                            <span className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border ${
+                              blog.blog_images && blog.blog_images.length > 0
+                                ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-100 dark:border-blue-900/30"
+                                : "bg-zinc-50 dark:bg-zinc-900/20 text-zinc-700 dark:text-zinc-400 border-zinc-100 dark:border-zinc-800"
+                            }`}>
+                              {blog.blog_images && blog.blog_images.length > 0 ? "Has Image" : "No Image"}
+                            </span>
                             {blog.category && (
                               <span className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700">
                                 {blog.category}
                               </span>
                             )}
                           </div>
-                          <h3 className="text-2xl font-black text-zinc-900 dark:text-white mb-3 tracking-tighter group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{blog.title}</h3>
-                          <p className="text-zinc-500 dark:text-zinc-400 text-sm line-clamp-2 mb-6 leading-relaxed font-medium">{blog.excerpt}</p>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-col md:flex-row gap-6">
+                            {blog.blog_images && blog.blog_images.length > 0 && (
+                              <div className="w-full md:w-32 h-32 flex-shrink-0">
+                                <img 
+                                  src={blog.blog_images[0].image_url} 
+                                  alt={blog.title}
+                                  className="w-full h-full object-cover rounded-xl border border-zinc-100 dark:border-zinc-800"
+                                />
+                              </div>
+                            )}
+                            <div className="flex-1">
+                              <h3 className="text-2xl font-black text-zinc-900 dark:text-white mb-3 tracking-tighter group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{blog.title}</h3>
+                              <p className="text-zinc-500 dark:text-zinc-400 text-sm line-clamp-2 mb-6 leading-relaxed font-medium">{blog.excerpt}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 mt-4">
                             <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-widest">
                               Modified • {new Date(blog.updated_at || blog.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                             </span>
