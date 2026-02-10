@@ -10,6 +10,7 @@ import {
 import Header from "../components/Header";
 import BlogPost from "../components/BlogPost";
 import PostModal from "../components/PostModal";
+import Reactions from "../components/Reactions";
 
 const CATEGORIES = ["All", "Technology", "Lifestyle", "Travel", "Food", "Business", "Health"];
 
@@ -139,32 +140,32 @@ export default function Home() {
       />
 
       {/* Search and Filters */}
-      <section className="mb-12">
-        <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-8">
-          <div className="relative w-full md:max-w-md">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
-            <input
-              type="text"
-              placeholder="Search posts..."
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-blue-300 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-400 outline-none transition-all shadow-lg shadow-blue-100/50"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="flex overflow-x-auto pb-2 md:pb-0 gap-2 w-full md:w-auto no-scrollbar">
+      <section className="mb-16">
+        <div className="flex flex-col md:flex-row gap-8 justify-between items-center border-b border-zinc-100 dark:border-zinc-800 pb-8 mb-12">
+          <div className="flex overflow-x-auto gap-8 w-full md:w-auto no-scrollbar">
             {CATEGORIES.map(category => (
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                className={`text-sm font-bold uppercase tracking-widest whitespace-nowrap transition-all relative py-2 ${
                   selectedCategory === category 
-                  ? "bg-blue-600 text-white shadow-md" 
-                  : "bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-800"
+                  ? "text-blue-600 after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-blue-600" 
+                  : "text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
                 }`}
               >
                 {category}
               </button>
             ))}
+          </div>
+          
+          <div className="relative w-full md:w-64">
+            <input
+              type="text"
+              placeholder="Search..."
+              className="w-full bg-transparent border-none text-sm font-bold uppercase tracking-widest text-zinc-900 dark:text-white placeholder:text-zinc-300 focus:ring-0 outline-none p-0"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
         </div>
 
@@ -177,38 +178,48 @@ export default function Home() {
           <>
             {/* Featured Post (only on "All" and when not searching) */}
             {selectedCategory === "All" && searchTerm === "" && featuredPost && (
-              <div className="mb-12">
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center gap-2">
-                  <span className="text-yellow-500">⭐</span> Featured Post
-                </h2>
+              <div className="mb-20">
                 <div
-                  className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-white to-blue-50 dark:from-gray-900 dark:to-gray-800 border border-blue-200 dark:border-gray-800 shadow-lg hover:shadow-2xl hover:shadow-blue-200/50 dark:hover:shadow-blue-900/30 transition-all duration-500 cursor-pointer"
+                  className="group relative flex flex-col lg:flex-row items-center gap-12 cursor-pointer"
                   onClick={() => handlePostClick(featuredPost)}
                 >
-                  <div className="flex flex-col lg:flex-row">
-                    {featuredPost.blog_images?.[0] && (
-                      <div className="lg:w-1/2 overflow-hidden">
-                        <img 
-                          src={featuredPost.blog_images[0].image_url} 
-                          alt={featuredPost.title}
-                          className="w-full h-64 lg:h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        />
+                  {featuredPost.blog_images?.[0] && (
+                    <div className="w-full lg:w-3/5 overflow-hidden rounded-2xl aspect-[16/10]">
+                      <img 
+                        src={featuredPost.blog_images[0].image_url} 
+                        alt={featuredPost.title}
+                        className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                      />
+                    </div>
+                  )}
+                  <div className={`w-full ${featuredPost.blog_images?.[0] ? 'lg:w-2/5' : 'text-center'}`}>
+                    <span className="text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-widest mb-6 block">
+                      Featured • {featuredPost.category || "Story"}
+                    </span>
+                    <h3 className="text-4xl md:text-5xl font-extrabold text-zinc-900 dark:text-white mb-6 leading-tight group-hover:text-blue-600 transition-colors">
+                      {featuredPost.title}
+                    </h3>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-lg mb-8 line-clamp-3 leading-relaxed font-light">
+                      {featuredPost.excerpt}
+                    </p>
+                    <div className="flex flex-col gap-6 text-sm text-zinc-400 border-t border-zinc-100 dark:border-zinc-800 pt-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <span className="font-bold text-zinc-900 dark:text-zinc-200 uppercase tracking-tighter">By {featuredPost.profiles?.username}</span>
+                          <span className="opacity-30">•</span>
+                          <span className="uppercase tracking-widest text-[10px] font-bold">{new Date(featuredPost.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        </div>
+                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                          {comments[featuredPost.id.toString()]?.length || 0} Comments
+                        </span>
                       </div>
-                    )}
-                    <div className={`p-8 lg:p-12 flex flex-col justify-center ${featuredPost.blog_images?.[0] ? 'lg:w-1/2' : 'w-full text-center'}`}>
-                      <span className="inline-block px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-wider mb-4 w-fit mx-auto lg:mx-0">
-                        {featuredPost.category || "Featured"}
-                      </span>
-                      <h3 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                        {featuredPost.title}
-                      </h3>
-                      <p className="text-gray-600 dark:text-gray-400 text-lg mb-6 line-clamp-3 leading-relaxed">
-                        {featuredPost.excerpt}
-                      </p>
-                      <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-500 mt-auto justify-center lg:justify-start">
-                        <span className="font-semibold text-gray-900 dark:text-gray-200">By {featuredPost.profiles?.username}</span>
-                        <span className="text-gray-300 dark:text-gray-700">•</span>
-                        <span className="dark:text-gray-400">{new Date(featuredPost.created_at).toLocaleDateString()}</span>
+                      <div className="pt-4 border-t border-zinc-50 dark:border-zinc-800/50" onClick={(e) => e.stopPropagation()}>
+                        <Reactions
+                          blogId={featuredPost.id}
+                          userId={userId}
+                          reactions={reactions[featuredPost.id.toString()] || []}
+                          onReactionUpdate={() => loadExtras(featuredPost.id.toString())}
+                        />
                       </div>
                     </div>
                   </div>
@@ -218,17 +229,17 @@ export default function Home() {
 
             {/* Grid Posts */}
             <div>
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
-                  {selectedCategory === "All" && searchTerm === "" ? "Latest Stories" : `Results for ${selectedCategory !== "All" ? selectedCategory : searchTerm}`}
-                  <span className="ml-3 text-sm font-normal text-gray-400">({filteredBlogs.length})</span>
-                </h2>
+              <div className="flex justify-between items-end mb-12">
+                <div>
+                  <h2 className="text-sm font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.2em]">
+                    {selectedCategory === "All" && searchTerm === "" ? "Recent Entries" : `Filtered Results`}
+                  </h2>
+                </div>
                 <button
                   onClick={() => setRefreshKey(k => k + 1)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-500 dark:text-gray-400"
-                  title="Refresh posts"
+                  className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-blue-600 transition-colors"
                 >
-                  🔄
+                  Refresh Feed
                 </button>
               </div>
 

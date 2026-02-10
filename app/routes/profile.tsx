@@ -217,13 +217,6 @@ export default function Profile() {
                             }`}>
                               {blog.published ? "Published" : "Draft"}
                             </span>
-                            <span className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border ${
-                              blog.blog_images && blog.blog_images.length > 0
-                                ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-100 dark:border-blue-900/30"
-                                : "bg-zinc-50 dark:bg-zinc-900/20 text-zinc-700 dark:text-zinc-400 border-zinc-100 dark:border-zinc-800"
-                            }`}>
-                              {blog.blog_images && blog.blog_images.length > 0 ? "Has Image" : "No Image"}
-                            </span>
                             {blog.category && (
                               <span className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700">
                                 {blog.category}
