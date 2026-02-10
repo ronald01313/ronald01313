@@ -44,6 +44,7 @@ export interface Comment {
   blog_id: number;
   user_id: string;
   content: string;
+  image_url?: string;
   parent_comment_id?: number;
   created_at: string;
   updated_at: string;
@@ -97,18 +98,67 @@ export const createProfile = async (userId: string, username: string, fullName?:
   }
 };
 
-// Blog functions
-export const fetchBlogs = async (): Promise<Blog[]> => {
+export const updateProfile = async (userId: string, updates: Partial<Profile>): Promise<Profile | null> => {
   try {
     const { data, error } = await supabase
+      .from("profiles")
+      .update(updates)
+      .eq("id", userId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating profile:", error);
+      return null;
+    }
+
+    return data;
+  } catch (err) {
+    console.error("Unexpected error updating profile:", err);
+    return null;
+  }
+};
+
+export const uploadAvatar = async (userId: string, file: File): Promise<string | null> => {
+  try {
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${userId}_${Date.now()}.${fileExt}`;
+    const filePath = `avatars/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("blog-images") // Reusing the same bucket for avatars
+      .upload(filePath, file);
+
+    if (uploadError) {
+      console.error("Avatar upload error:", uploadError);
+      return null;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("blog-images")
+      .getPublicUrl(filePath);
+
+    return urlData?.publicUrl || null;
+  } catch (err) {
+    console.error("Unexpected avatar upload error:", err);
+    return null;
+  }
+};
+export const fetchBlogs = async (page: number = 1, pageSize: number = 6): Promise<{ blogs: Blog[], totalCount: number }> => {
+  try {
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    const { data, error, count } = await supabase
       .from("blogs")
-      .select("*, blog_images(*)")
+      .select("*, blog_images(*)", { count: "exact" })
       .eq("published", true)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .range(from, to);
 
     if (error) {
       console.error("Error fetching blogs:", error);
-      return [];
+      return { blogs: [], totalCount: 0 };
     }
 
     // Filter out blogs with null/undefined ids and fetch profiles separately for each blog
@@ -123,10 +173,10 @@ export const fetchBlogs = async (): Promise<Blog[]> => {
       })
     );
 
-    return blogsWithProfiles;
+    return { blogs: blogsWithProfiles, totalCount: count || 0 };
   } catch (err) {
     console.error("Unexpected error fetching blogs:", err);
-    return [];
+    return { blogs: [], totalCount: 0 };
   }
 };
 
@@ -349,7 +399,7 @@ export const getComments = async (blogId: number | string): Promise<ThreadedComm
       .from("comments")
       .select("*")
       .eq("blog_id", id)
-      .order("created_at", { ascending: true });
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Error fetching comments:", error.message || error);
@@ -393,6 +443,36 @@ export const getComments = async (blogId: number | string): Promise<ThreadedComm
   }
 };
 
+export const uploadCommentImage = async (
+  file: File,
+  userId: string
+): Promise<string | null> => {
+  try {
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${userId}_${Date.now()}.${fileExt}`;
+    const filePath = `comment_images/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("blog-images") // Reusing the same bucket for simplicity, or use "comment-images" if it exists
+      .upload(filePath, file);
+
+    if (uploadError) {
+      console.error("Comment image upload error:", uploadError);
+      return null;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("blog-images")
+      .getPublicUrl(filePath);
+
+    return urlData?.publicUrl || null;
+  } catch (err) {
+    console.error("Unexpected comment image upload error:", err);
+    return null;
+  }
+};
+
+
 export const addComment = async (comment: Omit<Comment, "id" | "created_at" | "updated_at">): Promise<Comment | null> => {
   try {
     const { data, error } = await supabase
@@ -402,7 +482,12 @@ export const addComment = async (comment: Omit<Comment, "id" | "created_at" | "u
       .single();
 
     if (error) {
-      console.error("Error adding comment:", error);
+      console.error("Supabase error adding comment:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
       return null;
     }
 
@@ -581,7 +666,8 @@ export async function fetchAllExtras(blogIds: number[]) {
       supabase
         .from("comments")
         .select("*")
-        .in("blog_id", blogIds),
+        .in("blog_id", blogIds)
+        .order("created_at", { ascending: false }),
       supabase
         .from("reactions")
         .select("*")

@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router";
-import { getCurrentUser, getProfile, getUserBlogs, signOut, type Profile, type Blog, getComments, fetchReactions, updateBlog } from "../lib/supabase";
+import { getCurrentUser, getProfile, getUserBlogs, signOut, type Profile, type Blog, getComments, fetchReactions, updateBlog, updateProfile, uploadAvatar } from "../lib/supabase";
 import Header from "../components/Header";
 import { DeletePost } from "../components/DeletePost";
 import PostModal from "../components/PostModal";
+import { toast } from "../lib/toast";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -19,6 +20,18 @@ export default function Profile() {
   const [modalReactions, setModalReactions] = useState<any[]>([]);
   const [publishLoading, setPublishLoading] = useState<number | null>(null);
 
+  // Profile Edit State
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    username: "",
+    full_name: "",
+    bio: "",
+  });
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     const loadUserData = async () => {
       const currentUser = await getCurrentUser();
@@ -26,6 +39,13 @@ export default function Profile() {
         setUser(currentUser);
         const userProfile = await getProfile(currentUser.id);
         setProfile(userProfile);
+        if (userProfile) {
+          setEditFormData({
+            username: userProfile.username || "",
+            full_name: userProfile.full_name || "",
+            bio: userProfile.bio || "",
+          });
+        }
         const userBlogs = await getUserBlogs(currentUser.id);
         setBlogs(userBlogs);
       }
@@ -33,6 +53,50 @@ export default function Profile() {
     };
     loadUserData();
   }, []);
+
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setSavingProfile(true);
+
+    try {
+      let avatarUrl = profile?.avatar_url;
+      if (avatarFile) {
+        const uploadedUrl = await uploadAvatar(user.id, avatarFile);
+        if (uploadedUrl) avatarUrl = uploadedUrl;
+      }
+
+      const updated = await updateProfile(user.id, {
+        username: editFormData.username,
+        full_name: editFormData.full_name,
+        bio: editFormData.bio,
+        avatar_url: avatarUrl,
+      });
+
+      if (updated) {
+        setProfile(updated);
+        setIsEditingProfile(false);
+        setAvatarFile(null);
+        setAvatarPreview(null);
+        toast("Profile updated successfully!");
+      }
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      toast("Failed to update profile", "error");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setAvatarPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
 
   useEffect(() => {
     if (searchParams.get('edited') === 'true') {
@@ -95,9 +159,11 @@ export default function Profile() {
       });
       if (updated) {
         setBlogs(blogs.map(b => b.id === blog.id ? updated : b));
+        toast(`Post ${updated.published ? 'published' : 'moved to drafts'}`);
       }
     } catch (err) {
       console.error("Error updating blog:", err);
+      toast("Failed to update post status", "error");
     } finally {
       setPublishLoading(null);
     }
@@ -144,49 +210,144 @@ export default function Profile() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Sidebar Info */}
           <div className="lg:col-span-1 space-y-8">
-            <div className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-xl transition-all duration-500">
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-16 h-16 bg-zinc-900 dark:bg-white rounded-2xl flex items-center justify-center text-white dark:text-zinc-900 text-2xl font-black shadow-lg">
-                  {profile?.username?.[0]?.toUpperCase() || "U"}
-                </div>
-                <div>
-                  <h2 className="text-xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter">Profile</h2>
-                  <p className="text-xs font-bold text-zinc-500 dark:text-zinc-500 uppercase tracking-widest">Personal Info</p>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                <div className="bg-zinc-50 dark:bg-zinc-800/50 p-5 rounded-2xl border border-zinc-100 dark:border-zinc-700 transition-all shadow-inner">
-                  <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-500 uppercase tracking-widest mb-1">Username</label>
-                  <p className="text-zinc-900 dark:text-zinc-200 font-bold">{profile?.username || "Not set"}</p>
-                </div>
-                
-                <div className="bg-zinc-50 dark:bg-zinc-800/50 p-5 rounded-2xl border border-zinc-100 dark:border-zinc-700 transition-all shadow-inner">
-                  <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-500 uppercase tracking-widest mb-1">Email</label>
-                  <p className="text-zinc-900 dark:text-zinc-200 font-bold truncate">{user.email}</p>
-                </div>
-
-                <div className="bg-zinc-50 dark:bg-zinc-800/50 p-5 rounded-2xl border border-zinc-100 dark:border-zinc-700 transition-all shadow-inner">
-                  <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-500 uppercase tracking-widest mb-1">Full Name</label>
-                  <p className="text-zinc-900 dark:text-zinc-200 font-bold">{profile?.full_name || "Not set"}</p>
-                </div>
-
-                {profile?.bio && (
-                  <div className="bg-zinc-50 dark:bg-zinc-800/50 p-5 rounded-2xl border border-zinc-100 dark:border-zinc-700 transition-all shadow-inner">
-                    <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-500 uppercase tracking-widest mb-1">Bio</label>
-                    <p className="text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed font-medium">{profile.bio}</p>
-                  </div>
-                )}
-
-                <div className="pt-6 mt-2">
+            <div className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-xl transition-all duration-500 relative overflow-hidden">
+              {!isEditingProfile ? (
+                <>
                   <button
-                    onClick={handleLogout}
-                    className="w-full px-6 py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-2xl font-black uppercase tracking-widest hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all flex items-center justify-center gap-3 border border-zinc-200 dark:border-zinc-700 group shadow-sm text-xs"
+                    onClick={() => setIsEditingProfile(true)}
+                    className="absolute right-4 top-4 p-2 text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all"
+                    title="Edit Profile"
                   >
-                    Logout Account
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
                   </button>
-                </div>
-              </div>
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="w-20 h-20 bg-zinc-900 dark:bg-white rounded-2xl flex items-center justify-center text-white dark:text-zinc-900 text-3xl font-black shadow-lg overflow-hidden border-2 border-zinc-100 dark:border-zinc-800">
+                      {profile?.avatar_url ? (
+                        <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
+                      ) : (
+                        profile?.username?.[0]?.toUpperCase() || "U"
+                      )}
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter">Profile</h2>
+                      <p className="text-xs font-bold text-zinc-500 dark:text-zinc-500 uppercase tracking-widest">Personal Info</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="bg-zinc-50 dark:bg-zinc-800/50 p-5 rounded-2xl border border-zinc-100 dark:border-zinc-700 transition-all shadow-inner">
+                      <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-500 uppercase tracking-widest mb-1">Username</label>
+                      <p className="text-zinc-900 dark:text-zinc-200 font-bold">@{profile?.username || "Not set"}</p>
+                    </div>
+                    
+                    <div className="bg-zinc-50 dark:bg-zinc-800/50 p-5 rounded-2xl border border-zinc-100 dark:border-zinc-700 transition-all shadow-inner">
+                      <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-500 uppercase tracking-widest mb-1">Email</label>
+                      <p className="text-zinc-900 dark:text-zinc-200 font-bold truncate">{user.email}</p>
+                    </div>
+
+                    <div className="bg-zinc-50 dark:bg-zinc-800/50 p-5 rounded-2xl border border-zinc-100 dark:border-zinc-700 transition-all shadow-inner">
+                      <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-500 uppercase tracking-widest mb-1">Full Name</label>
+                      <p className="text-zinc-900 dark:text-zinc-200 font-bold">{profile?.full_name || "Not set"}</p>
+                    </div>
+
+                    <div className="bg-zinc-50 dark:bg-zinc-800/50 p-5 rounded-2xl border border-zinc-100 dark:border-zinc-700 transition-all shadow-inner">
+                      <label className="block text-[10px] font-black text-zinc-500 dark:text-zinc-500 uppercase tracking-widest mb-1">Bio</label>
+                      <p className="text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed font-medium line-clamp-4">{profile?.bio || "No bio added yet."}</p>
+                    </div>
+
+                    <div className="pt-6 mt-2">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full px-6 py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-2xl font-black uppercase tracking-widest hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all flex items-center justify-center gap-3 border border-zinc-200 dark:border-zinc-700 group shadow-sm text-xs"
+                      >
+                        Logout Account
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <form onSubmit={handleProfileUpdate} className="space-y-6">
+                  <div className="flex flex-col items-center mb-8">
+                    <div 
+                      className="w-24 h-24 bg-zinc-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center relative group cursor-pointer overflow-hidden border-2 border-dashed border-zinc-300 dark:border-zinc-700"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {avatarPreview || profile?.avatar_url ? (
+                        <img src={avatarPreview || profile?.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <svg className="w-8 h-8 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                      )}
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <span className="text-white text-[10px] font-black uppercase tracking-widest">Change</span>
+                      </div>
+                    </div>
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      onChange={handleAvatarChange} 
+                      className="hidden" 
+                      accept="image/*" 
+                    />
+                    <p className="mt-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Avatar Image</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Username</label>
+                      <input
+                        type="text"
+                        value={editFormData.username}
+                        onChange={(e) => setEditFormData({ ...editFormData, username: e.target.value })}
+                        className="w-full p-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-700 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Full Name</label>
+                      <input
+                        type="text"
+                        value={editFormData.full_name}
+                        onChange={(e) => setEditFormData({ ...editFormData, full_name: e.target.value })}
+                        className="w-full p-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-700 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1.5 ml-1">Bio</label>
+                      <textarea
+                        value={editFormData.bio}
+                        onChange={(e) => setEditFormData({ ...editFormData, bio: e.target.value })}
+                        className="w-full p-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-700 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all min-h-[100px] resize-none"
+                        placeholder="Tell us about yourself..."
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="submit"
+                      disabled={savingProfile}
+                      className="flex-1 py-4 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50"
+                    >
+                      {savingProfile ? "Saving..." : "Save Changes"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditingProfile(false);
+                        setAvatarPreview(null);
+                        setAvatarFile(null);
+                      }}
+                      className="px-6 py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all border border-zinc-200 dark:border-zinc-700"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
 

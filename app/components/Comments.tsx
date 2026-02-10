@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { addComment, deleteComment, updateComment, getComments } from "../lib/supabase";
+import { useState, useRef } from "react";
+import { Link } from "react-router";
+import { addComment, deleteComment, updateComment, getComments, uploadCommentImage } from "../lib/supabase";
 
 interface CommentsProps {
   blogId: number;
@@ -16,13 +16,44 @@ export default function Comments({ blogId, userId, comments, onCommentUpdate }: 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
+  
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleAddComment = async () => {
     if (!commentText.trim() || !userId) return;
     setIsSubmitting(true);
     try {
-      await addComment({ blog_id: blogId, user_id: userId, content: commentText.trim() });
+      let imageUrl = undefined;
+      if (selectedImage) {
+        imageUrl = await uploadCommentImage(selectedImage, userId) || undefined;
+      }
+      
+      await addComment({ 
+        blog_id: blogId, 
+        user_id: userId, 
+        content: commentText.trim(),
+        image_url: imageUrl
+      });
+      
       setCommentText("");
+      setSelectedImage(null);
+      setImagePreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      
       onCommentUpdate();
     } catch (err) {
       console.error("Error adding comment:", err);
@@ -57,8 +88,24 @@ export default function Comments({ blogId, userId, comments, onCommentUpdate }: 
     if (!replyText.trim() || !userId) return;
     setIsSubmitting(true);
     try {
-      await addComment({ blog_id: blogId, user_id: userId, content: replyText.trim(), parent_comment_id: parentId });
+      let imageUrl = undefined;
+      if (selectedImage) {
+        imageUrl = await uploadCommentImage(selectedImage, userId) || undefined;
+      }
+
+      await addComment({ 
+        blog_id: blogId, 
+        user_id: userId, 
+        content: replyText.trim(), 
+        parent_comment_id: parentId,
+        image_url: imageUrl
+      });
+      
       setReplyText("");
+      setSelectedImage(null);
+      setImagePreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      
       setReplyingTo(null);
       onCommentUpdate();
     } catch (err) {
@@ -148,6 +195,11 @@ export default function Comments({ blogId, userId, comments, onCommentUpdate }: 
               <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-sm whitespace-pre-wrap font-medium">
                 {comment.content}
               </p>
+              {comment.image_url && (
+                <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700 max-w-md">
+                  <img src={comment.image_url} alt="Comment attachment" className="w-full h-auto object-cover" />
+                </div>
+              )}
               {depth < maxDepth && userId && (
                 <div className="mt-4">
                   <button
@@ -171,6 +223,41 @@ export default function Comments({ blogId, userId, comments, onCommentUpdate }: 
               disabled={isSubmitting}
               className="w-full p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl resize-vertical min-h-[100px] text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm font-medium"
             />
+            
+            <div className="mt-3">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+                id={`reply-image-${comment.id}`}
+              />
+              <div className="flex flex-wrap gap-3 items-center">
+                <button
+                  type="button"
+                  onClick={() => document.getElementById(`reply-image-${comment.id}`)?.click()}
+                  className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 rounded-lg text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all flex items-center gap-2"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Add Image
+                </button>
+                
+                {replyingTo === comment.id && imagePreview && (
+                  <div className="relative group">
+                    <img src={imagePreview} alt="Preview" className="w-12 h-12 object-cover rounded-lg border border-zinc-200 dark:border-zinc-700" />
+                    <button
+                      onClick={() => { setSelectedImage(null); setImagePreview(null); }}
+                      className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[8px] shadow-lg"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="flex gap-2 mt-4">
               <button
                 onClick={() => handleAddReply(comment.id)}
@@ -221,6 +308,41 @@ export default function Comments({ blogId, userId, comments, onCommentUpdate }: 
             disabled={isSubmitting}
             className="w-full p-5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-700 rounded-2xl resize-vertical min-h-[150px] text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 outline-none transition-all disabled:opacity-50 text-sm font-medium shadow-inner"
           />
+          
+          <div className="mt-4">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              ref={fileInputRef}
+              className="hidden"
+            />
+            <div className="flex flex-wrap gap-4 items-center">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="px-4 py-2 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Attach Image
+              </button>
+              
+              {imagePreview && (
+                <div className="relative group">
+                  <img src={imagePreview} alt="Preview" className="w-16 h-16 object-cover rounded-lg border border-zinc-200 dark:border-zinc-700" />
+                  <button
+                    onClick={() => { setSelectedImage(null); setImagePreview(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="flex justify-end mt-6">
           <button
             onClick={handleAddComment}

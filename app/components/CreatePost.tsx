@@ -3,6 +3,7 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { useSearchParams, useNavigate } from "react-router";
 import { createBlog, getCurrentUser, uploadAndSaveBlogImage, updateBlog, getBlogById, supabase} from "../lib/supabase";
+import { toast } from "../lib/toast";
 
 interface CreatePostProps {
   onPostCreated?: () => void;
@@ -26,6 +27,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
   const navigate = useNavigate();
   const editId = searchParams.get('edit');
   const [isEditing, setIsEditing] = useState(false);
+  const [isPublished, setIsPublished] = useState(true);
 
   const [userId, setUserId] = useState<string | null>(null);
   const [userLoading, setUserLoading] = useState(true);
@@ -78,6 +80,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
               content: blog.content,
               category: blog.category || "",
             });
+            setIsPublished(blog.published);
 
             // Don't load existing images - we'll replace them entirely when editing
 
@@ -211,7 +214,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, publish: boolean = true) => {
     e.preventDefault();
     setError("");
     setSuccess(false);
@@ -253,6 +256,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
           excerpt: formData.excerpt,
           content: finalContent,
           category: formData.category,
+          published: publish,
         });
 
         if (result) {
@@ -285,8 +289,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
             });
           }
 
-          setSuccess(true);
-          setTimeout(() => setSuccess(false), 3000);
+          toast(`Story ${publish ? 'updated' : 'saved as draft'} successfully!`);
 
           // Navigate to profile page with success notification
           navigate("/profile?edited=true");
@@ -306,7 +309,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
           excerpt: formData.excerpt,
           content: finalContent,
           category: formData.category,
-          published: true,
+          published: publish,
         });
 
         if (result) {
@@ -330,6 +333,8 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
               content: updatedContent,
             });
           }
+
+          toast(`Story ${publish ? 'published' : 'saved as draft'} successfully!`);
 
           // Navigate to the newly created post
           navigate(`/post/${result.id}`);
@@ -393,7 +398,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={(e) => handleSubmit(e, true)} className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-2">
             <label className="block text-xs font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest ml-1">
@@ -550,37 +555,74 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
               {uploadedImages.map((img, idx) => (
                 <div key={idx} className="relative group rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800">
                   <img src={img.url} alt="Preview" className="w-full h-24 object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => setUploadedImages(prev => prev.filter((_, i) => i !== idx))}
-                    className="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-md"
-                  >
-                    ×
-                  </button>
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const textarea = document.querySelector('textarea[name="content"]') as HTMLTextAreaElement;
+                        if (textarea) {
+                          const start = textarea.selectionStart;
+                          const end = textarea.selectionEnd;
+                          const before = formData.content.substring(0, start);
+                          const after = formData.content.substring(end);
+                          const imageMarkdown = `\n![image](${img.url})\n`;
+                          setFormData(prev => ({ ...prev, content: before + imageMarkdown + after }));
+                        }
+                      }}
+                      title="Insert into content"
+                      className="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-md hover:bg-blue-700 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUploadedImages(prev => prev.filter((_, i) => i !== idx))}
+                      title="Remove image"
+                      className="bg-red-500 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-md hover:bg-red-600 transition-colors"
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        <div className="flex justify-end gap-6 pt-8">
+        <div className="flex flex-col sm:flex-row justify-end gap-4 pt-8">
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="px-10 py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-xl font-black uppercase tracking-widest hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all text-xs border border-zinc-200 dark:border-zinc-700 shadow-sm"
+            className="px-8 py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-xl font-black uppercase tracking-widest hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all text-[10px] border border-zinc-200 dark:border-zinc-700 shadow-sm"
           >
             Cancel
           </button>
+          
+          <button
+            type="button"
+            onClick={(e) => handleSubmit(e, false)}
+            disabled={loading || !userId}
+            className={`px-8 py-4 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all duration-500 border border-zinc-200 dark:border-zinc-700 shadow-sm ${
+              loading 
+              ? "bg-zinc-100 dark:bg-zinc-800 cursor-not-allowed text-zinc-400"
+                : "bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+            }`}
+          >
+            {loading ? "..." : "Save Draft"}
+          </button>
+
           <button
             type="submit"
             disabled={loading || !userId}
-            className={`px-14 py-4 rounded-xl text-white font-black uppercase tracking-widest text-xs shadow-xl transition-all duration-500 ${
+            className={`px-12 py-4 rounded-xl text-white font-black uppercase tracking-widest text-[10px] shadow-xl transition-all duration-500 ${
               loading 
               ? "bg-zinc-300 dark:bg-zinc-800 cursor-not-allowed text-zinc-500"
                 : "bg-blue-600 hover:bg-blue-700 shadow-blue-500/20"
             }`}
           >
-            {loading ? "Saving..." : isEditing ? "Update Story" : "Publish Story"}
+            {loading ? "..." : isEditing ? "Update Story" : "Publish Story"}
           </button>
         </div>
       </form>

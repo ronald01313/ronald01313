@@ -16,20 +16,20 @@ interface BlogPostProps {
 export default function BlogPost({ blog, comments, reactions, userId, onReactionUpdate, onCommentUpdate, onPostClick }: BlogPostProps) {
   return (
     <article
-      className="bg-white dark:bg-zinc-900 group cursor-pointer h-full flex flex-col transition-all duration-300"
+      className="bg-white dark:bg-zinc-900 group cursor-pointer h-full flex flex-col transition-all duration-300 border border-zinc-100 dark:border-zinc-800 rounded-3xl p-5 hover:shadow-xl hover:border-blue-100 dark:hover:border-zinc-700"
       onClick={onPostClick}
     >
       {blog.blog_images && blog.blog_images.length > 0 && (
-        <div className="mb-6 overflow-hidden rounded-xl aspect-video w-full bg-zinc-100 dark:bg-zinc-800">
+        <div className="mb-6 overflow-hidden rounded-2xl aspect-[16/10] w-full bg-zinc-100 dark:bg-zinc-800 flex-shrink-0">
           <img
-            src={`${blog.blog_images.find(img => img.is_featured)?.image_url || blog.blog_images[0].image_url}?t=${Date.now()}`}
+            src={`${blog.blog_images.find(img => img.is_featured)?.image_url || blog.blog_images[0].image_url}`}
             alt={blog.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
         </div>
       )}
 
-      <div className="flex flex-col flex-1">
+      <div className="flex flex-col flex-grow">
         <div className="flex items-center gap-2 mb-3">
           {blog.category && (
             <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">

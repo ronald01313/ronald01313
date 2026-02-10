@@ -16,6 +16,9 @@ const CATEGORIES = ["All", "Technology", "Lifestyle", "Travel", "Food", "Busines
 
 export default function Home() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 6;
   const [comments, setComments] = useState<Record<string, any[]>>({});
   const [reactions, setReactions] = useState<Record<string, any[]>>({});
   const [userId, setUserId] = useState<string | null>(null);
@@ -40,13 +43,12 @@ export default function Home() {
   const loadBlogs = async () => {
     setLoading(true);
     try {
-      const data = await fetchBlogs();
-      // Sort blogs by created_at in descending order (latest first)
-      const sortedData = data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      setBlogs(sortedData);
+      const { blogs: data, totalCount: count } = await fetchBlogs(currentPage, pageSize);
+      setBlogs(data);
+      setTotalCount(count);
 
       // Batch load comments and reactions
-      const blogIds = sortedData.map(b => b.id).filter(id => id != null) as number[];
+      const blogIds = data.map(b => b.id).filter(id => id != null) as number[];
       if (blogIds.length > 0) {
         const extras = await fetchAllExtras(blogIds);
         setComments(extras.comments);
@@ -80,7 +82,8 @@ export default function Home() {
   useEffect(() => {
     if (!mounted) return;
     loadBlogs();
-  }, [mounted, refreshKey]);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [mounted, refreshKey, currentPage]);
 
   // Periodic check for changes from other tabs
   useEffect(() => {
@@ -129,7 +132,9 @@ export default function Home() {
   });
 
   const featuredPost = blogs[0];
-  const otherPosts = filteredBlogs.filter(p => p.id !== featuredPost?.id);
+  const otherPosts = (selectedCategory === "All" && searchTerm === "" && currentPage === 1) 
+    ? filteredBlogs.filter(p => p.id !== featuredPost?.id)
+    : filteredBlogs;
 
   return (
     <div className="pb-12 transition-colors duration-300">
@@ -177,39 +182,43 @@ export default function Home() {
         ) : (
           <>
             {/* Featured Post (only on "All" and when not searching) */}
-            {selectedCategory === "All" && searchTerm === "" && featuredPost && (
-              <div className="mb-20">
+            {selectedCategory === "All" && searchTerm === "" && featuredPost && currentPage === 1 && (
+              <div className="mb-20 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
                 <div
-                  className="group relative flex flex-col lg:flex-row items-center gap-12 cursor-pointer"
+                  className="group relative flex flex-col lg:flex-row items-stretch gap-12 cursor-pointer bg-white dark:bg-zinc-900/50 p-6 rounded-[2.5rem] border border-transparent hover:border-blue-100 dark:hover:border-zinc-800 hover:shadow-2xl transition-all duration-500"
                   onClick={() => handlePostClick(featuredPost)}
                 >
                   {featuredPost.blog_images?.[0] && (
-                    <div className="w-full lg:w-3/5 overflow-hidden rounded-2xl aspect-[16/10]">
+                    <div className="w-full lg:w-3/5 overflow-hidden rounded-[2rem] aspect-[16/10] flex-shrink-0 shadow-lg">
                       <img 
                         src={featuredPost.blog_images[0].image_url} 
                         alt={featuredPost.title}
-                        className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                        className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                       />
                     </div>
                   )}
-                  <div className={`w-full ${featuredPost.blog_images?.[0] ? 'lg:w-2/5' : 'text-center'}`}>
-                    <span className="text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-widest mb-6 block">
+                  <div className={`w-full ${featuredPost.blog_images?.[0] ? 'lg:w-2/5' : 'text-center'} flex flex-col justify-center py-4 transform transition-transform duration-500 group-hover:translate-x-2`}>
+                    <span className="text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-[0.3em] mb-6 block animate-pulse">
                       Featured • {featuredPost.category || "Story"}
                     </span>
-                    <h3 className="text-4xl md:text-5xl font-extrabold text-zinc-900 dark:text-white mb-6 leading-tight group-hover:text-blue-600 transition-colors">
+                    <h3 className="text-4xl md:text-5xl lg:text-6xl font-black text-zinc-900 dark:text-white mb-6 leading-[1.1] group-hover:text-blue-600 transition-colors tracking-tighter">
                       {featuredPost.title}
                     </h3>
-                    <p className="text-zinc-500 dark:text-zinc-400 text-lg mb-8 line-clamp-3 leading-relaxed font-light">
+                    <p className="text-zinc-500 dark:text-zinc-400 text-lg mb-8 line-clamp-4 leading-relaxed font-medium">
                       {featuredPost.excerpt}
                     </p>
-                    <div className="flex flex-col gap-6 text-sm text-zinc-400 border-t border-zinc-100 dark:border-zinc-800 pt-6">
+                    <div className="flex flex-col gap-6 text-sm text-zinc-400 border-t border-zinc-100 dark:border-zinc-800 pt-8 mt-auto">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <span className="font-bold text-zinc-900 dark:text-zinc-200 uppercase tracking-tighter">By {featuredPost.profiles?.username}</span>
-                          <span className="opacity-30">•</span>
-                          <span className="uppercase tracking-widest text-[10px] font-bold">{new Date(featuredPost.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          <div className="w-12 h-12 rounded-2xl bg-zinc-900 dark:bg-white flex items-center justify-center text-white dark:text-zinc-900 font-black text-lg shadow-inner transform transition-transform group-hover:rotate-12">
+                            {featuredPost.profiles?.username?.[0]}
+                          </div>
+                          <div>
+                            <span className="block font-black text-zinc-900 dark:text-zinc-200 uppercase tracking-tighter text-sm">By {featuredPost.profiles?.username}</span>
+                            <span className="uppercase tracking-widest text-[10px] font-bold opacity-50">{new Date(featuredPost.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          </div>
                         </div>
-                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest bg-zinc-50 dark:bg-zinc-800/50 px-4 py-2 rounded-xl border border-zinc-100 dark:border-zinc-800 shadow-sm">
                           {comments[featuredPost.id.toString()]?.length || 0} Comments
                         </span>
                       </div>
@@ -228,7 +237,7 @@ export default function Home() {
             )}
 
             {/* Grid Posts */}
-            <div>
+            <div className="mb-16">
               <div className="flex justify-between items-end mb-12">
                 <div>
                   <h2 className="text-sm font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.2em]">
@@ -245,7 +254,7 @@ export default function Home() {
 
               {filteredBlogs.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {(selectedCategory === "All" && searchTerm === "" ? otherPosts : filteredBlogs).map((blog) => (
+                  {(selectedCategory === "All" && searchTerm === "" && currentPage === 1 ? otherPosts : filteredBlogs).map((blog) => (
                     <div key={blog.id} className="h-full flex flex-col">
                       <BlogPost
                         blog={blog}
@@ -273,6 +282,43 @@ export default function Home() {
                 </div>
               )}
             </div>
+
+            {/* Pagination UI */}
+            {totalCount > pageSize && (
+              <div className="flex justify-center items-center gap-4 mt-12 border-t border-zinc-100 dark:border-zinc-800 pt-12">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-6 py-3 rounded-xl border border-zinc-200 dark:border-zinc-800 text-sm font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                
+                <div className="flex items-center gap-2">
+                  {[...Array(Math.ceil(totalCount / pageSize))].map((_, i) => (
+                    <button
+                      key={i + 1}
+                      onClick={() => setCurrentPage(i + 1)}
+                      className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${
+                        currentPage === i + 1
+                          ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+                          : "text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(Math.ceil(totalCount / pageSize), p + 1))}
+                  disabled={currentPage === Math.ceil(totalCount / pageSize)}
+                  className="px-6 py-3 rounded-xl border border-zinc-200 dark:border-zinc-800 text-sm font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </>
         )}
       </section>
