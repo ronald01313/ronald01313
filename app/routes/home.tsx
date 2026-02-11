@@ -8,7 +8,7 @@ import {
   type Blog,
 } from "../lib/supabase";
 import Header from "../components/Header";
-import BlogPost from "../components/BlogPost";
+import BlogPost, { ImageGrid } from "../components/BlogPost";
 import PostModal from "../components/PostModal";
 import Reactions from "../components/Reactions";
 
@@ -188,16 +188,12 @@ export default function Home() {
                   className="group relative flex flex-col lg:flex-row items-stretch gap-12 cursor-pointer bg-white dark:bg-zinc-900/50 p-6 rounded-[2.5rem] border border-transparent hover:border-blue-100 dark:hover:border-zinc-800 hover:shadow-2xl transition-all duration-500"
                   onClick={() => handlePostClick(featuredPost)}
                 >
-                  {featuredPost.blog_images?.[0] && (
-                    <div className="w-full lg:w-3/5 overflow-hidden rounded-[2rem] aspect-[16/10] flex-shrink-0 shadow-lg">
-                      <img 
-                        src={featuredPost.blog_images[0].image_url} 
-                        alt={featuredPost.title}
-                        className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-                      />
+                  {featuredPost.blog_images && featuredPost.blog_images.length > 0 && (
+                    <div className="w-full lg:w-3/5 flex-shrink-0">
+                      <ImageGrid images={featuredPost.blog_images} title={featuredPost.title} />
                     </div>
                   )}
-                  <div className={`w-full ${featuredPost.blog_images?.[0] ? 'lg:w-2/5' : 'text-center'} flex flex-col justify-center py-4 transform transition-transform duration-500 group-hover:translate-x-2`}>
+                  <div className={`w-full ${featuredPost.blog_images && featuredPost.blog_images.length > 0 ? 'lg:w-2/5' : 'text-center'} flex flex-col justify-center py-4 transform transition-transform duration-500 group-hover:translate-x-2`}>
                     <span className="text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-[0.3em] mb-6 block animate-pulse">
                       Featured • {featuredPost.category || "Story"}
                     </span>

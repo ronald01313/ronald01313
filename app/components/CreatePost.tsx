@@ -2,7 +2,7 @@
 
 import { useState, useEffect, type ReactNode } from "react";
 import { useSearchParams, useNavigate } from "react-router";
-import { createBlog, getCurrentUser, uploadAndSaveBlogImage, updateBlog, getBlogById, supabase} from "../lib/supabase";
+import { createBlog, getCurrentUser, uploadAndSaveBlogImage, updateBlog, getBlogById, deleteBlogImage, supabase} from "../lib/supabase";
 import { toast } from "../lib/toast";
 
 interface CreatePostProps {
@@ -37,7 +37,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
     content: "",
     category: "",
   });
-  const [uploadedImages, setUploadedImages] = useState<{ url: string; file: string; fileObject?: File; existing?: boolean; id?: number }[]>([]);
+  const [uploadedImages, setUploadedImages] = useState<{ url: string; file: string; fileObject?: File; existing?: boolean; id?: number; is_featured?: boolean }[]>([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -82,7 +82,16 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
             });
             setIsPublished(blog.published);
 
-            // Don't load existing images - we'll replace them entirely when editing
+            // Load existing images
+            if (blog.blog_images && blog.blog_images.length > 0) {
+              setUploadedImages(blog.blog_images.map(img => ({
+                url: img.image_url,
+                file: img.alt_text || "image",
+                existing: true,
+                id: img.id,
+                is_featured: img.is_featured
+              })));
+            }
 
             setIsEditing(true);
           } else {
@@ -186,29 +195,36 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !userId) return;
+    const files = e.target.files;
+    if (!files || files.length === 0 || !userId) return;
 
     setImageLoading(true);
     try {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const previewUrl = event.target?.result as string;
-        const imageName = file.name;
+      const newImagesPromises = Array.from(files).map(file => {
+        return new Promise<{ url: string; file: string; fileObject: File }>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            resolve({
+              url: event.target?.result as string,
+              file: file.name,
+              fileObject: file
+            });
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      });
 
-        // Store file reference for later upload (not the preview URL)
-        setUploadedImages((prev) => [...prev, {
-          url: previewUrl, // Preview for display
-          file: imageName,
-          fileObject: file // Store the actual file object
-        }]);
-        setImageUploadSuccess(true);
-        setTimeout(() => setImageUploadSuccess(false), 3000);
-      };
-      reader.readAsDataURL(file);
+      const newImages = await Promise.all(newImagesPromises);
+      setUploadedImages((prev) => [...prev, ...newImages]);
+      setImageUploadSuccess(true);
+      setTimeout(() => setImageUploadSuccess(false), 3000);
+      
+      // Reset the input value so the same files can be selected again
+      e.target.value = "";
     } catch (err) {
-      console.error("Error handling image:", err);
-      setError("Failed to process image");
+      console.error("Error handling images:", err);
+      setError("Failed to process one or more images");
     } finally {
       setImageLoading(false);
     }
@@ -260,26 +276,44 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
         });
 
         if (result) {
-          // Handle image uploads for editing (if any new images)
+          // Handle image uploads for editing
           let updatedContent = finalContent;
 
+          // Get existing images that are still in uploadedImages
+          const existingImages = uploadedImages.filter(img => img.existing && img.id);
           const newImages = uploadedImages.filter(img => img.fileObject);
 
+          // Delete images that were removed (existing images not in uploadedImages anymore)
+          const currentImageIds = existingImages.map(img => img.id);
+          const { data: allExistingImages } = await supabase
+            .from('blog_images')
+            .select('id')
+            .eq('blog_id', blogId);
+
+          const imagesToDelete = allExistingImages?.filter(img => !currentImageIds.includes(img.id)) || [];
+          for (const img of imagesToDelete) {
+            await deleteBlogImage(img.id);
+          }
+
+          // Upload new images
           if (newImages.length > 0) {
-            // Delete all existing blog_images for this blog
-            await supabase.from('blog_images').delete().eq('blog_id', blogId);
-
-            let firstNew = true;
-            for (const img of uploadedImages) {
+            for (const img of newImages) {
               if (img.fileObject) {
-                // Upload with correct is_featured
-                const image = await uploadAndSaveBlogImage(img.fileObject, blogId, userId, img.file, firstNew);
-
+                const image = await uploadAndSaveBlogImage(img.fileObject, blogId, userId, img.file, img.is_featured);
                 if (image) {
                   updatedContent = updatedContent.replace(img.url, image.image_url);
                 }
-                firstNew = false;
               }
+            }
+          }
+
+          // Update featured status for all images to ensure consistency
+          for (const img of uploadedImages) {
+            if (img.existing && img.id) {
+              await supabase
+                .from('blog_images')
+                .update({ is_featured: !!img.is_featured })
+                .eq('id', img.id);
             }
           }
 
@@ -315,12 +349,13 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
         if (result) {
           // Now upload images and update content with real URLs
           let updatedContent = finalContent;
+          const hasFeatured = uploadedImages.some(img => img.is_featured);
 
-          for (const img of uploadedImages) {
+          for (let i = 0; i < uploadedImages.length; i++) {
+            const img = uploadedImages[i];
             if (img.fileObject) {
-              const image = await uploadAndSaveBlogImage(img.fileObject, result.id, userId, img.file,
-                uploadedImages.length === 1
-              );
+              const isFeatured = hasFeatured ? !!img.is_featured : i === 0;
+              const image = await uploadAndSaveBlogImage(img.fileObject, result.id, userId, img.file, isFeatured);
 
               if (image) {
                 updatedContent = updatedContent.replace(img.url, image.image_url);
@@ -526,7 +561,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
               value={formData.content}
               onChange={handleChange}
               disabled={loading || !userId}
-              className="w-full p-6 bg-white dark:bg-gray-900 border-none outline-none disabled:opacity-50 min-h-[400px] resize-vertical font-mono text-sm leading-relaxed text-gray-900 dark:text-gray-100"
+              className="w-full p-6 bg-white dark:bg-gray-900 border-none outline-none disabled:opacity-50 min-h-[400px] resize-vertical font-mono text-sm leading-relaxed text-gray-900 dark:text-gray-100 break-words"
               placeholder="Start writing your masterpiece... (Markdown supported)"
               required
             />
@@ -540,6 +575,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
           <input
             type="file"
             accept="image/*"
+            multiple
             onChange={handleImageUpload}
             disabled={loading || !userId || imageLoading}
             className="block w-full text-sm text-gray-500 dark:text-gray-400
@@ -555,6 +591,11 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
               {uploadedImages.map((img, idx) => (
                 <div key={idx} className="relative group rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800">
                   <img src={img.url} alt="Preview" className="w-full h-24 object-cover" />
+                  {img.is_featured && (
+                    <div className="absolute top-2 left-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                      Featured
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <button
                       type="button"
@@ -574,6 +615,21 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUploadedImages(prev => prev.map((image, i) => ({
+                          ...image,
+                          is_featured: i === idx
+                        })));
+                      }}
+                      title="Set as featured"
+                      className={`w-8 h-8 rounded-full flex items-center justify-center shadow-md transition-colors ${img.is_featured ? 'bg-yellow-500 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-yellow-100'}`}
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                       </svg>
                     </button>
                     <button

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { addComment, getComments, fetchReactions } from "../lib/supabase";
 import Reactions from "./Reactions";
 import Comments from "./Comments";
+import { ImageGrid } from "./BlogPost";
 import type { Blog } from "../lib/supabase";
 
 interface PostModalProps {
@@ -38,6 +39,47 @@ export default function PostModal({ blog, comments, reactions, userId, isOpen, o
     }
   };
 
+  const renderContent = (content: string) => {
+    // Regex to match markdown images: ![alt](url)
+    const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = imgRegex.exec(content)) !== null) {
+      // Add text before the image
+      if (match.index > lastIndex) {
+        parts.push(
+          <span key={`text-${lastIndex}`} className="whitespace-pre-wrap break-words">
+            {content.substring(lastIndex, match.index)}
+          </span>
+        );
+      }
+
+      // Add the image
+      const [fullMatch, alt, url] = match;
+      parts.push(
+        <div key={`img-${match.index}`} className="my-6 overflow-hidden rounded-xl border border-gray-100 dark:border-gray-800 shadow-md">
+          <img src={url} alt={alt || "Blog image"} className="w-full h-auto object-cover max-h-[600px]" />
+          {alt && <p className="text-center text-xs text-gray-500 mt-2 pb-2 italic">{alt}</p>}
+        </div>
+      );
+
+      lastIndex = imgRegex.lastIndex;
+    }
+
+    // Add remaining text
+    if (lastIndex < content.length) {
+      parts.push(
+        <span key={`text-${lastIndex}`} className="whitespace-pre-wrap break-words">
+          {content.substring(lastIndex)}
+        </span>
+      );
+    }
+
+    return parts.length > 0 ? parts : <span className="whitespace-pre-wrap break-words">{content}</span>;
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -63,20 +105,12 @@ export default function PostModal({ blog, comments, reactions, userId, isOpen, o
 
         {/* Modal Content */}
         <div className="p-8">
-          {/* Blog Images */}
-          {blog.blog_images && blog.blog_images.length > 0 && (
-            <div className="mb-10 overflow-hidden rounded-2xl shadow-lg border border-gray-100 dark:border-gray-800">
-              <img
-                src={blog.blog_images.find(img => img.is_featured)?.image_url || blog.blog_images[0].image_url}
-                alt={blog.title}
-                className="w-full max-h-[500px] object-cover"
-              />
-            </div>
-          )}
+          {/* Blog Images Grid */}
+          <ImageGrid images={blog.blog_images || []} title={blog.title} />
 
           {/* Blog Content */}
-          <div className="mb-10 text-gray-700 dark:text-gray-300 leading-relaxed text-lg whitespace-pre-wrap">
-            {blog.content}
+          <div className="mb-10 text-gray-700 dark:text-gray-300 leading-relaxed text-lg break-words">
+            {renderContent(blog.content)}
           </div>
 
           {/* Metadata */}

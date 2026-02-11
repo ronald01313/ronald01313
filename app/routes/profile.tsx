@@ -367,7 +367,7 @@ export default function Profile() {
               {blogs.length > 0 ? (
                 <div className="space-y-6">
                   {blogs.map((blog) => (
-                    <div key={blog.id} className="group border border-zinc-100 dark:border-zinc-800 rounded-2xl p-6 hover:border-zinc-200 dark:hover:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all shadow-sm">
+                    <div key={blog.id} className="group border border-zinc-100 dark:border-zinc-800 rounded-2xl p-6 hover:border-zinc-200 dark:hover:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all shadow-sm relative">
                       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-4">
@@ -431,7 +431,7 @@ export default function Profile() {
                         >
                           Edit
                         </Link>
-                        <div className="flex-1 min-w-[100px]">
+                        <div className="flex-1 min-w-[100px] relative">
                           <DeletePost
                             postId={blog.id}
                             postTitle={blog.title}

@@ -365,6 +365,23 @@ export const addBlogImage = async (image: Omit<BlogImage, "id" | "created_at">):
 
 export const deleteBlogImage = async (imageId: number): Promise<boolean> => {
   try {
+    // 1️⃣ Get image URL first to delete from storage
+    const { data: imageData } = await supabase
+      .from("blog_images")
+      .select("image_url")
+      .eq("id", imageId)
+      .single();
+
+    if (imageData?.image_url) {
+      const urlParts = imageData.image_url.split('/');
+      const filePath = urlParts.slice(-2).join('/');
+      
+      await supabase.storage
+        .from("blog-images")
+        .remove([filePath]);
+    }
+
+    // 2️⃣ Delete from DB
     const { error } = await supabase
       .from("blog_images")
       .delete()
@@ -517,11 +534,16 @@ export const deleteComment = async (commentId: number): Promise<boolean> => {
   }
 };
 
-export const updateComment = async (commentId: number, content: string): Promise<Comment | null> => {
+export const updateComment = async (commentId: number, content: string, imageUrl?: string | null): Promise<Comment | null> => {
   try {
+    const updates: any = { content, updated_at: new Date().toISOString() };
+    if (imageUrl !== undefined) {
+      updates.image_url = imageUrl;
+    }
+
     const { data, error } = await supabase
       .from("comments")
-      .update({ content, updated_at: new Date().toISOString() })
+      .update(updates)
       .eq("id", commentId)
       .select()
       .single();
@@ -535,6 +557,28 @@ export const updateComment = async (commentId: number, content: string): Promise
   } catch (err) {
     console.error("Unexpected error updating comment:", err);
     return null;
+  }
+};
+
+export const deleteCommentImage = async (imageUrl: string): Promise<boolean> => {
+  try {
+    // Extract path from URL, e.g., https://.../comment_images/filename -> comment_images/filename
+    const urlParts = imageUrl.split('/');
+    const filePath = urlParts.slice(-2).join('/');
+
+    const { error } = await supabase.storage
+      .from("blog-images")
+      .remove([filePath]);
+
+    if (error) {
+      console.error("Error deleting comment image:", error);
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    console.error("Unexpected error deleting comment image:", err);
+    return false;
   }
 };
 

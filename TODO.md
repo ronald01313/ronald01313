@@ -1,16 +1,19 @@
-# TODO: Enhance Light Theme with Professional Colors
+# TODO: Implement CRUD Operations for Images in Post and Comment Editing
 
-## Steps to Complete
+## 1. Update CreatePost.tsx
+- [x] Load existing blog_images when editing and display them with remove buttons
+- [x] Allow adding new images while preserving existing ones unless removed
+- [x] On submit: delete removed images, keep existing, upload new ones
 
-- [x] Update navigation in `layout.tsx`: Enhance background gradients and button colors for light mode
-- [x] Improve home page (`home.tsx`): Add vibrant backgrounds and better button styling
-- [x] Enhance profile page (`profile.tsx`): Professional card colors and button accents
-- [x] Update `Comments.tsx`: Better button colors and accents
-- [x] Update `BlogPost.tsx`: Professional button and accent colors
-- [x] Update `PostModal.tsx`: Enhanced button styling
-- [x] Update `CreatePost.tsx`: Professional button colors
-- [x] Update `Register.tsx`: Better button accents
-- [x] Update `Login.tsx`: Enhanced button styling
-- [x] Update `Header.tsx`: Professional color accents
-- [ ] Test all pages in light mode for improved UX
-- [ ] Ensure dark mode remains unaffected
+## 2. Update Comments.tsx
+- [x] Add image preview and removal in edit form
+- [x] Allow uploading new images in edit mode
+- [x] Update comment update logic to handle image changes
+
+## 3. Update supabase.ts
+- [x] Modify updateComment to accept image_url parameter
+- [x] Add function to delete comment images from storage
+
+## Followup Steps
+- [ ] Test image CRUD in both post and comment editing
+- [ ] Ensure proper cleanup of removed images from storage
